@@ -1,0 +1,32 @@
+import re
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.orm import Session
+
+from app.api import user, job
+from app.core.auth import get_password_hash, verify_password, create_access_token
+from app.core.database import SessionLocal, get_db
+from app.models.user import User
+from app.schemas.item import Item
+from app.schemas.user import UserRegister, UserLogin
+from app.services.item_service import process_item
+from app.services.user_service import create_user
+from app.utils.security import encrypt_password
+
+router = APIRouter()
+router.include_router(user.router)
+# 注册 job 路由
+router.include_router(job.router, prefix="/job", tags=["job"])
+
+
+@router.get("/hello")
+def say_hello():
+    return {"message": "Hello from FastAPI!"}
+
+
+@router.post("/items/")
+def create_item(item: Item):
+    result = process_item(item)
+    return {"result": result}
+
+

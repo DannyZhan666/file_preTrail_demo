@@ -1,0 +1,319 @@
+<template>
+  <div class="layout-container">
+
+    <el-steps :active="currentStep" finish-status="success" direction="vertical" class="step-container">
+      <el-step title="Step 1"/>
+      <el-step title="Step 2"/>
+    </el-steps>
+    <!-- 左侧表单 -->
+    <el-row>
+      <el-col :span="12" v-if="currentStep === 0">
+        <div class="form-container">
+          <el-form
+              ref="ruleFormRef"
+              style="max-width: 600px"
+              :model="ruleForm"
+              :rules="rules"
+              label-width="auto"
+              class="demo-ruleForm"
+              :size="formSize"
+              status-icon
+          >
+            <el-form-item label="工单标题" prop="jobName">
+              <el-input v-model="ruleForm.jobName"/>
+            </el-form-item>
+            <el-form-item label="工单种类" prop="jobType">
+              <el-select v-model="ruleForm.jobType" placeholder="列表选择分类">
+                <el-option label="房地产" :value="1"></el-option>
+                <el-option label="婚姻" :value="2"></el-option>
+                <el-option label="公司法" :value="3"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="工单简介" prop="intro">
+              <el-input v-model="ruleForm.jobIntro"/>
+            </el-form-item>
+            <!-- 上传文件 -->
+            <el-form-item label="上传文件" label-width="100px">
+              <!--      <el-upload
+                        class="upload-demo"
+                        :file-list="uploadedFiles"
+                        :show-file-list="true"
+                        :auto-upload="false"
+                        :before-upload="beforeUpload"
+                    >
+                      <el-button size="small" type="primary">点击上传</el-button>
+                    </el-upload>-->
+              <el-upload
+                  drag
+                  class="upload-demo"
+                  show-file-list="false"
+                  multiple
+                  :before-upload="beforeUpload"
+              >
+                <el-icon class="el-icon--upload">
+                  <upload-filled/>
+                </el-icon>
+                <div class="el-upload__text">
+                  Drop file here or <em>click to upload</em>
+                </div>
+                <template #tip>
+                  <div class="el-upload__tip">
+                    jpg/png files with a size less than 100Mb
+                  </div>
+<!--                  <div v-for="(file,index) in uploadedFiles" :key="file.name" class="el-upload-list__item">-->
+<!--                    <span>{{ index + 1 }} . {{ file.name }}</span>-->
+<!--                    &lt;!&ndash;            <el-button type="text" @click="handleRemove(file)">Remove</el-button>&ndash;&gt;-->
+<!--                  </div>-->
+                </template>
+              </el-upload>
+            </el-form-item>
+            <!--    <el-form-item label="预期完成时间" required>
+                  <el-col :span="11">
+                    <el-form-item prop="date1">
+                      <el-date-picker
+                          v-model="ruleForm.date1"
+                          type="date"
+                          aria-label="Pick a date"
+                          placeholder="Pick a date"
+                          style="width: 100%"
+                      />
+                    </el-form-item>
+                  </el-col>
+                </el-form-item>-->
+            <el-form-item label="预期时间" prop="expectedTime" required>
+              <el-date-picker
+                  v-model="ruleForm.expectedTime"
+                  type="datetime"
+                  placeholder="选择预期时间"
+                  style="width: 100%;"
+                  :disabled-date="disabledDate"
+              />
+            </el-form-item>
+            <el-form-item label="预期金额" prop="clientBudget">
+              <el-input v-model="ruleForm.clientBudget"/>
+            </el-form-item>
+            <!--    <el-form-item label="Instant delivery" prop="delivery">
+                  <el-switch v-model="ruleForm.delivery" />
+                </el-form-item>
+                <el-form-item label="Activity form" prop="desc">
+                  <el-input v-model="ruleForm.desc" type="textarea" />
+                </el-form-item>-->
+            <el-form-item>
+              <el-button type="primary" @click="goNextStep">
+                Next
+              </el-button>
+              <el-button @click="resetForm(ruleFormRef)">Reset</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </el-col>
+      <!-- 右侧表格 -->
+      <el-col :span="12" v-if="currentStep === 1">
+        <div class="table-container">
+          <el-form
+              ref="ruleFormRef"
+              style="max-width: 600px"
+              :model="ruleForm"
+              :rules="rules"
+              label-width="auto"
+              class="demo-ruleForm"
+              :size="formSize"
+              status-icon
+          >
+            <el-form-item label="工单标题" prop="jobName">
+              <el-input v-model="ruleForm.jobName"/>
+            </el-form-item>
+            <el-form-item label="工单种类" prop="jobType">
+              <el-select v-model="ruleForm.jobType" placeholder="列表选择分类">
+                <el-option label="房地产" :value="1"></el-option>
+                <el-option label="婚姻" :value="2"></el-option>
+                <el-option label="公司法" :value="3"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="工单简介" prop="intro">
+              <el-input v-model="ruleForm.jobIntro"/>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="submitForm(ruleFormRef)">
+                Create
+              </el-button>
+              <el-button @click="resetForm(ruleFormRef)">Reset</el-button>
+              <el-button @click="goPrevStep">Previous</el-button> <!-- 上一页按钮 -->
+            </el-form-item>
+          </el-form>
+        </div>
+      </el-col>
+    </el-row>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import {reactive, ref} from 'vue'
+import {ComponentSize, ElMessage, FormInstance, FormRules, UploadUserFile} from 'element-plus'
+import {jobCreate, userLogin, fileUpload} from "@/api/user";
+import {UploadFilled} from '@element-plus/icons-vue'
+import {useRouter} from "vue-router";
+
+interface RuleForm {
+  fileId: number
+  jobName: string
+  jobType: number
+  jobIntro: string
+  clientBudget: string
+  expectedTime: string; // 新增字段
+}
+
+const router = useRouter();
+const formSize = ref<ComponentSize>('default')
+const ruleFormRef = ref<FormInstance>()
+const ruleForm = ref<RuleForm>({
+  fileId: -1,
+  jobName: '',
+  jobType: '',
+  jobIntro: '此工单是关于',
+  clientBudget: '',
+  expectedTime: "", // 初始化为空字符串
+})
+
+const uploadedFiles = ref<UploadUserFile[]>([])
+
+// 禁用过去的日期
+const disabledDate = (time: Date) => {
+  return time.getTime() < Date.now();
+};
+
+const currentStep = ref(0);  // 控制当前步骤
+
+const rules = reactive<FormRules<RuleForm>>({
+  jobName: [{required: true, message: '请填写工单名', trigger: 'blur'},],
+  jobType: [{required: true, message: '请选择工单类型', trigger: 'blur',},],
+  clientBudget: [{required: true, message: '请填写预估金额', trigger: 'blur'},],
+})
+
+const goNextStep = () => {
+  if (currentStep.value < 1) {
+    currentStep.value++;
+  }
+};
+
+const goPrevStep = () => {
+  if (currentStep.value > 0) {
+    currentStep.value--;
+  }
+};
+
+const beforeUpload = async (file: File) => {
+  //校验文件大小不超过100Mb
+  /*if (
+      file.type !== 'image/jpeg' &&
+      file.type !== 'image/png' &&
+      file.type !== 'image/gif'
+  ) {
+    ElMessage.error('头像图片应为Jpg/Jpeg/Png/Gif格式！')
+    return false
+  } else */
+  if (file.size / 1024 / 1024 > 100) {
+    ElMessage.error('头像大小不应超过100Mb！')
+    return false
+  }
+
+  uploadedFiles.value = [{name: file.name, url: URL.createObjectURL(file)}]
+  // uploadedFiles.value.push({ name: file.name, url: URL.createObjectURL(file) })
+
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fileUpload(formData)
+  ruleForm.value.fileId = res.data.data
+  console.log('beforeUpload', uploadedFiles.value)
+  return false
+}
+
+const submitForm = async (formEl: FormInstance | undefined) => {
+  if (!formEl) return;
+  await formEl.validate(async (valid) => {
+    if (valid) {
+      try {
+        // const formData = new FormData();
+        // formData.append('jobName', ruleForm.value.jobName);
+        // formData.append('jobType', ruleForm.value.jobType.toString());
+        // formData.append('jobIntro', ruleForm.value.jobIntro);
+        // formData.append('clientBudget', ruleForm.value.clientBudget);
+        //
+        // if (uploadedFiles.value.length > 0) {
+        //   formData.append('myFile', ruleForm.value.myFile);
+        // }
+
+        // Submit the form data
+        //把ruleForm.value.myFile转换为二进制文件
+
+        console.log('ruleForm.value', ruleForm.value)
+        const res = await jobCreate(ruleForm.value);
+        // console.log('res:::::::::::',formData)
+        if (res.data.code === 200) {
+          console.log('提交表单成功:', res.data);
+          ElMessage.success('提交成功');
+          changePage('/jobManage');
+        } else {
+          console.log("fail");
+        }
+      } catch (error) {
+        console.error('提交表单失败:', error);
+        ElMessage.error('提交失败');
+      }
+    }
+  });
+}
+const changePage = (path: any) => {
+  router.push(path);
+};
+
+const resetForm = (formEl: FormInstance | undefined) => {
+  if (!formEl) return
+  formEl.resetFields()
+}
+
+</script>
+
+<style scoped>
+.layout-container {
+  display: flex;
+  justify-content: center; /* 水平居中 */
+  align-items: center; /* 垂直居中 */
+  height: 80vh; /* 占满视口高度 */
+  background-color: #f5f5f5; /* 可选：设置背景颜色 */
+  gap: 50px; /* 设置左右两部分的间距 */
+}
+
+.step-container {
+  margin-bottom: 20px;
+  height: 40vh; /* 设置高度为原来的一半 */
+  width: 150px; /* 可选：调整宽度 */
+}
+
+
+.form-container, .table-container {
+  background-color: #fff; /* 可选：设置背景颜色 */
+  padding: 20px; /* 内边距 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* 可选：添加阴影 */
+  border-radius: 8px; /* 可选：圆角 */
+  /*margin-right: 20px; !* 可选：右侧间距 *!*/
+  width: 700px;
+}
+
+/*.table-container {
+  background-color: #fff; !* 可选：设置背景颜色 *!
+  padding: 20px; !* 内边距 *!
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); !* 可选：添加阴影 *!
+  border-radius: 8px; !* 可选：圆角 *!
+}*/
+
+.el-form {
+  width: 100%;
+  max-width: none;
+}
+
+.el-button {
+  margin-right: 10px;
+}
+
+</style>
