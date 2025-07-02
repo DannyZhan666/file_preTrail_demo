@@ -3,7 +3,7 @@ import re
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from app.api import user, job
+from app.api import user, job, order, file
 from app.core.auth import get_password_hash, verify_password, create_access_token
 from app.core.database import SessionLocal, get_db
 from app.models.user import User
@@ -17,6 +17,8 @@ router = APIRouter()
 router.include_router(user.router)
 # 注册 job 路由
 router.include_router(job.router, prefix="/job", tags=["job"])
+router.include_router(order.router, prefix="/order", tags=["order"])
+router.include_router(file.router, prefix="/file", tags=["file"])
 
 
 @router.get("/hello")

@@ -32,12 +32,24 @@ class User(BaseModel):
     id: int
     username: str
     user_account: str
-    gender: Optional[str] = None
+    gender: Optional[int] = None
     avatar_url: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
     user_role: UserRole
     create_time: datetime
 
-class Config:
-    orm_mode = True  # 如果使用 SQLAlchemy ORM
+    class Config:
+        orm_mode = True  # 如果使用 SQLAlchemy ORM
+
+class LawyerResponse(BaseModel):
+    id: int
+    username: Optional[str] = ''  # 设置默认值为空字符串
+    gender: Optional[int] = None
+    avatar_url: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    create_time: datetime  # 使用前端传递的格式化时间
+
+    class Config:
+        orm_mode = True  # 允许Pydantic从ORM对象中提取数据

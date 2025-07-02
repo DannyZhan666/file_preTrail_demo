@@ -1,4 +1,6 @@
 import re
+from datetime import datetime
+from typing import Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
@@ -6,8 +8,10 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_password_hash, verify_password, create_access_token, get_current_user
 from app.core.database import SessionLocal, get_db
 from app.models.user import User
-from app.schemas.user import UserRegister, UserLogin
+from app.schemas.user import UserRegister, UserLogin, LawyerResponse
 from app.schemas.user import User as UserSchema  # 引入Pydantic用户模型
+from app.services.user_service import get_lawyers
+from app.utils.page_help import paginate
 from app.utils.result_utils import ResultUtils
 
 router = APIRouter(prefix="/user", tags=["用户模块"])
@@ -58,9 +62,8 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/logout")
-def logout(request: Request):
-    request.session.clear()
-    return {"message": "登出成功"}
+def logout():
+    return {"message": "登出成功（前端请删除 token）"}
 
 
 @router.get("/current")
@@ -88,3 +91,26 @@ def get_current_user_data(current_user: User = Depends(get_current_user)):
     }
 
     return ResultUtils.success(user_data)
+
+
+@router.get("/lawyerList")
+def get_lawyer_list(page: int, pageSize: int, db: Session = Depends(get_db),
+                     current_user: User = Depends(get_current_user)):
+    """
+    获取律师列表，支持分页
+    """
+    user_id = current_user.id
+    # Use the service to get the paginated lawyer data
+    paginated_data = get_lawyers(db, user_id, page, pageSize)
+
+    if not paginated_data:
+        raise HTTPException(status_code=404, detail="User not found or no lawyers available")
+
+    lawyer_list = [LawyerResponse.model_validate(lawyer.__dict__) for lawyer in paginated_data["list"]]
+
+    return ResultUtils.success({
+        "page": page,
+        "page_size": pageSize,
+        "total": paginated_data["total"],
+        "data": lawyer_list
+    })
