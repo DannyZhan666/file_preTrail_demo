@@ -20,11 +20,11 @@
       <el-table :data="orderList" class="my-el-table">
         <el-table-column label="序号" type="index" width="150" align="center" />
         <el-table-column prop="id" label="订单id" align="center" />
-        <el-table-column prop="orderName" label="订单名" align="center" />
-        <el-table-column prop="lawyerId" label="律师id" align="center" />
-        <el-table-column prop="clientId" label="客户id" align="center" />
+        <el-table-column prop="order_name" label="订单名" align="center" />
+        <el-table-column prop="lawyer_id" label="律师id" align="center" />
+        <el-table-column prop="client_id" label="客户id" align="center" />
         <el-table-column prop="jid" label="工单id" align="center" />
-        <el-table-column prop="createTime" label="创建时间" align="center" />
+        <el-table-column prop="create_time" label="创建时间" align="center" />
         <el-table-column label="操作" align="center">
           <template #default="scope">
             <el-button type="primary" @click="viewDetails(scope.row.id)">详情</el-button>
@@ -45,7 +45,8 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
-import router from "@/router"; // Import dayjs for time formatting
+import router from "@/router";
+import myAxios from "@/request"; // Import dayjs for time formatting
 
 const searchKey = ref('');
 const orderList = ref([]);
@@ -58,10 +59,10 @@ const form = ref({
 
 const fetchOrders = async (page = 1, pageSize = 10) => {
   try {
-    const response = await axios.get(`/order/list?page=${page}&pageSize=${pageSize}`);
+    const response = await myAxios.get(`/order/list?page=${page}&pageSize=${pageSize}`);
     if (response.data && response.data.code === 200) {
       // Format the createTime field
-      orderList.value = response.data.data.list.map(order => ({
+      orderList.value = response.data.data.data.map(order => ({
         ...order,
         createTime: dayjs(order.createTime).format('YYYY-MM-DD HH:mm:ss'), // Format time
       }));

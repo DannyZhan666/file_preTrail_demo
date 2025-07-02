@@ -20,17 +20,17 @@
               status-icon
           >
             <el-form-item label="工单标题" prop="jobName">
-              <el-input v-model="ruleForm.jobName"/>
+              <el-input v-model="ruleForm.job_name"/>
             </el-form-item>
             <el-form-item label="工单种类" prop="jobType">
-              <el-select v-model="ruleForm.jobType" placeholder="列表选择分类">
+              <el-select v-model="ruleForm.job_type" placeholder="列表选择分类">
                 <el-option label="房地产" :value="1"></el-option>
                 <el-option label="婚姻" :value="2"></el-option>
                 <el-option label="公司法" :value="3"></el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="工单简介" prop="intro">
-              <el-input v-model="ruleForm.jobIntro"/>
+              <el-input v-model="ruleForm.job_intro"/>
             </el-form-item>
             <!-- 上传文件 -->
             <el-form-item label="上传文件" label-width="100px">
@@ -82,7 +82,7 @@
                 </el-form-item>-->
             <el-form-item label="预期时间" prop="expectedTime" required>
               <el-date-picker
-                  v-model="ruleForm.expectedTime"
+                  v-model="ruleForm.expected_time"
                   type="datetime"
                   placeholder="选择预期时间"
                   style="width: 100%;"
@@ -90,7 +90,7 @@
               />
             </el-form-item>
             <el-form-item label="预期金额" prop="clientBudget">
-              <el-input v-model="ruleForm.clientBudget"/>
+              <el-input v-model="ruleForm.client_budget"/>
             </el-form-item>
             <!--    <el-form-item label="Instant delivery" prop="delivery">
                   <el-switch v-model="ruleForm.delivery" />
@@ -121,17 +121,17 @@
               status-icon
           >
             <el-form-item label="工单标题" prop="jobName">
-              <el-input v-model="ruleForm.jobName"/>
+              <el-input v-model="ruleForm.job_name"/>
             </el-form-item>
             <el-form-item label="工单种类" prop="jobType">
-              <el-select v-model="ruleForm.jobType" placeholder="列表选择分类">
+              <el-select v-model="ruleForm.job_type" placeholder="列表选择分类">
                 <el-option label="房地产" :value="1"></el-option>
                 <el-option label="婚姻" :value="2"></el-option>
                 <el-option label="公司法" :value="3"></el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="工单简介" prop="intro">
-              <el-input v-model="ruleForm.jobIntro"/>
+              <el-input v-model="ruleForm.job_intro"/>
             </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="submitForm(ruleFormRef)">
@@ -155,24 +155,24 @@ import {UploadFilled} from '@element-plus/icons-vue'
 import {useRouter} from "vue-router";
 
 interface RuleForm {
-  fileId: number
-  jobName: string
-  jobType: number
-  jobIntro: string
-  clientBudget: string
-  expectedTime: string; // 新增字段
+  file_id: number
+  job_name: string
+  job_type: number
+  job_intro: string
+  client_budget: string
+  expected_time: string; // 新增字段
 }
 
 const router = useRouter();
 const formSize = ref<ComponentSize>('default')
 const ruleFormRef = ref<FormInstance>()
 const ruleForm = ref<RuleForm>({
-  fileId: -1,
-  jobName: '',
-  jobType: '',
-  jobIntro: '此工单是关于',
-  clientBudget: '',
-  expectedTime: "", // 初始化为空字符串
+  file_id: -1,
+  job_name: '',
+  job_type: '',
+  job_intro: '此工单是关于',
+  client_budget: '',
+  expected_time: "", // 初始化为空字符串
 })
 
 const uploadedFiles = ref<UploadUserFile[]>([])
@@ -185,9 +185,9 @@ const disabledDate = (time: Date) => {
 const currentStep = ref(0);  // 控制当前步骤
 
 const rules = reactive<FormRules<RuleForm>>({
-  jobName: [{required: true, message: '请填写工单名', trigger: 'blur'},],
-  jobType: [{required: true, message: '请选择工单类型', trigger: 'blur',},],
-  clientBudget: [{required: true, message: '请填写预估金额', trigger: 'blur'},],
+  job_name: [{required: true, message: '请填写工单名', trigger: 'blur'},],
+  job_type: [{required: true, message: '请选择工单类型', trigger: 'blur',},],
+  client_budget: [{required: true, message: '请填写预估金额', trigger: 'blur'},],
 })
 
 const goNextStep = () => {
@@ -223,7 +223,7 @@ const beforeUpload = async (file: File) => {
   const formData = new FormData();
   formData.append('file', file);
   const res = await fileUpload(formData)
-  ruleForm.value.fileId = res.data.data
+  ruleForm.value.file_id = res.data.data.data
   console.log('beforeUpload', uploadedFiles.value)
   return false
 }

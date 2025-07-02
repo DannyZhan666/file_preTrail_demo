@@ -44,10 +44,18 @@ export const updateUserInfo = async (params: any) => {
 };
 
 export const userLogout = async () => {
-  return myAxios.request({
-    url: "/user/logout",
-    method: "POST",
-  });
+  // 通知后端使 JWT 失效（可选）
+  try {
+    await myAxios.request({
+      url: "/user/logout",
+      method: "POST",
+    });
+  } catch (error) {
+    console.error("登出请求失败", error);
+  }
+
+  // 清除客户端存储的 JWT
+  sessionStorage.removeItem("token");
 };
 
 export const jobCreate = async (params: any) => {

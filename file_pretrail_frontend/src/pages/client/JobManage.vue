@@ -53,7 +53,7 @@ const fetchWorkOrders = async (page = 1, pageSize = 10) => {
   try {
     const response = await myAxios.get(`/job/listForClient?page=${page}&pageSize=${pageSize}`);
     if (response.data && response.data.code === 200) {
-      workOrderList.value = response.data.data.list.map((job) => ({
+      workOrderList.value = response.data.data.data.map((job) => ({
         jobId: job.jobId,
         jobName: job.jobName,
         jobType: job.jobType,

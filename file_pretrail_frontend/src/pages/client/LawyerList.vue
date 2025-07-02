@@ -24,9 +24,9 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="avatarUrl" label="头像">
+        <el-table-column prop="avatar_url" label="头像">
           <template #default="scope">
-            <a-image :src="scope.row.avatarUrl" style="width: 100px; height: 100px" />
+            <a-image :src="scope.row.avatar_url" style="width: 100px; height: 100px" />
           </template>
         </el-table-column>
 
@@ -36,11 +36,11 @@
         <el-table-column prop="email" label="邮箱">
         </el-table-column>
 
-        <el-table-column prop="createTime" label="注册时间">
+        <el-table-column prop="create_time" label="注册时间">
         </el-table-column>
 
         <el-table-column label="操作" align="center">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             <el-popconfirm title="确定删除吗？" @confirm="deleteLawyer(scope.row.id)">
               <el-button type="danger" slot="reference">删除</el-button>
             </el-popconfirm>
@@ -55,23 +55,25 @@
 import {ref, onMounted} from 'vue';
 import axios from 'axios';
 import dayjs from "dayjs";
+import myAxios from "@/request";
 
 const searchKey = ref('');
 const lawyerList = ref([]);
 
 const fetchLawyers = async (page = 1, pageSize = 10) => {
   try {
-    const response = await axios.get(`/user/lawyerList?page=${page}&pageSize=${pageSize}`);
+    const response = await myAxios.get(`/user/lawyerList?page=${page}&pageSize=${pageSize}`);
     if (response.data && response.data.code === 200) {
-      lawyerList.value = response.data.data.list.map((lawyer) => ({
+      // console.log(response.data);
+      lawyerList.value = response.data.data.data.map((lawyer) => ({
         id: lawyer.id,
         username: lawyer.username,
         gender: lawyer.gender,
-        avatarUrl: lawyer.avatarUrl,
+        avatar_url: lawyer.avatar_url,
         phone: lawyer.phone,
         email: lawyer.email,
         // 格式化 createTime 字段
-        createTime: dayjs(lawyer.createTime).format('YYYY-MM-DD HH:mm:ss'),
+        create_time: dayjs(lawyer.create_time).format('YYYY-MM-DD HH:mm:ss'),
       }));
     } else {
       console.error('Invalid response data:', response.data);
@@ -83,7 +85,7 @@ const fetchLawyers = async (page = 1, pageSize = 10) => {
 
 const deleteLawyer = async (id) => {
   try {
-    const response = await axios.delete(`/api/lawyers/${id}`);
+    const response = await myAxios.delete(`/api/lawyers/${id}`);
     if (response.data && response.data.code === 200) {
       fetchLawyers();
     } else {
