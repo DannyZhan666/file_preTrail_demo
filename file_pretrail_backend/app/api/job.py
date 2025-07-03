@@ -1,13 +1,16 @@
+import base64
 from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
+from app.models.file import MyFile
 from app.models.job import Job
 from app.models.user import User
-from app.schemas.job import JobCreateRequest, JobResponse
-from app.services.job_service import list_raw_job_for_client
+from app.schemas.job import JobCreateRequest, JobResponse, JobDetailsForClientVO
+from app.services.job_service import list_raw_job_for_client, get_job_details, list_new_job_for_client
 from app.core.database import get_db
 from app.utils.result_utils import ResultUtils
 
@@ -25,6 +28,22 @@ def list_raw_job_for_client_api(page: int = 1, pageSize: int = 10, db: Session =
         return ResultUtils.success(result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+
+@router.get("/listNewJobForClient")
+async def list_new_job_for_client_api(page: int = 1, pageSize: int = 10, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    获取新的工单列表接口，区分客户端和律师。
+    """
+    user_id = current_user.id  # 当前用户 ID
+    if not user_id:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    try:
+        # 调用 service 层获取新的工单列表
+        job_list = list_new_job_for_client(page, pageSize, user_id, db)
+        return ResultUtils.success(job_list)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 @router.post("/create")
 async def create_job(
@@ -64,3 +83,20 @@ async def create_job(
 
     # return ResultUtils.success({"data": {"jobId": new_job.id}})
     return ResultUtils.success({"data": JobResponse.from_orm(new_job)})  # 返回创建的工单对象（或根据需求返回工单 ID）
+
+@router.get("/detailsForClient")
+async def details_for_client(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    获取工单详情接口，用户登录后才能查看工单。
+    """
+    # 用户验证
+    if not current_user.id:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    try:
+        # 调用 service 层获取工单详情
+        job_details = get_job_details(id, db, current_user.id)
+        return ResultUtils.success(job_details)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+

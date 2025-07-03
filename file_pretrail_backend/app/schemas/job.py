@@ -12,6 +12,22 @@ class RawJobListForClientVO(BaseModel):
     class Config:
         orm_mode = True
 
+class NewJobListForClientVO(BaseModel):
+    job_id: int
+    job_name: str
+    job_type: int
+    client_budget: int
+    due: Optional[datetime]
+    lawyer_name: Optional[str] = None
+    lawyer_budget: Optional[int] = None
+    due_law: Optional[datetime] = None
+    issue_date: datetime
+    update_date: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True  # 允许从 ORM 对象转换
+
+
 class JobCreateRequest(BaseModel):
     job_name: str  # 工单名称
     job_type: int  # 工单类型
@@ -39,3 +55,27 @@ class JobResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+
+class JobDetailsForClientVO(BaseModel):
+    job_id: int
+    job_name: str
+    job_type: int
+    job_intro: Optional[str]
+    client_id: int
+    client_name: Optional[str] = None
+    client_budget: int
+    due: Optional[datetime]
+    issue_date: datetime
+    file_content: Optional[str] = None
+    path: Optional[str] = None
+    file_name: Optional[str] = None
+    lawyer_id: int
+    lawyer_name: Optional[str] = None
+    lawyer_budget: int
+    lawyer_comment: Optional[str]
+    update_time: datetime
+    due_law: Optional[datetime]
+
+    class Config:
+        orm_mode = True  # 允许从 ORM 对象转换
