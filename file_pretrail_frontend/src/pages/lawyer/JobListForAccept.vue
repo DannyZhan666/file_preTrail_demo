@@ -50,6 +50,7 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { useRouter } from "vue-router";
+import myAxios from "@/request";
 
 interface Job {
   jobId: number;
@@ -74,17 +75,17 @@ const jobTypeMapping: { [key: number]: string } = {
 
 const fetchWorkOrders = async (page = 1, pageSize = 10) => {
   try {
-    const response = await axios.get(`/job/listNewJobForLaywer?page=${page}&pageSize=${pageSize}`);
+    const response = await myAxios.get(`/job/listNewJobForLawyer?page=${page}&pageSize=${pageSize}`);
     if (response.data && response.data.code === 200) {
-      workOrderList.value = response.data.data.list.map((job: Job) => ({
-        jobId: job.jobId,
-        jobName: job.jobName,
-        jobTypeName: jobTypeMapping[job.jobType] || '未知类型',
-        jobIntro: job.jobIntro,
-        clientName: job.clientName,
-        clientBudget: job.clientBudget,
-        createTime: dayjs(job.issueDate).format('YYYY-MM-DD HH:mm:ss'),
-        updateTime: dayjs(job.updateTime).format('YYYY-MM-DD HH:mm:ss'),
+      workOrderList.value = response.data.data.map((job: any) => ({
+        jobId: job.job_id,
+        jobName: job.job_name,
+        jobTypeName: jobTypeMapping[job.job_type] || '未知类型',
+        jobIntro: job.job_intro,
+        clientName: job.client_name,
+        clientBudget: job.client_budget,
+        createTime: dayjs(job.issue_date).format('YYYY-MM-DD HH:mm:ss'),
+        updateTime: dayjs(job.update_time).format('YYYY-MM-DD HH:mm:ss'),
       }));
     } else {
       console.error('Invalid response data:', response.data);

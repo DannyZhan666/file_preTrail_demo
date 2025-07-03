@@ -41,7 +41,8 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-import dayjs from 'dayjs'; // Import dayjs for time formatting
+import dayjs from 'dayjs';
+import myAxios from "@/request"; // Import dayjs for time formatting
 
 const searchKey = ref('');
 const orderList = ref([]);
@@ -54,12 +55,18 @@ const form = ref({
 
 const fetchOrders = async (page = 1, pageSize = 10) => {
   try {
-    const response = await axios.get(`/order/list?page=${page}&pageSize=${pageSize}`);
+    const response = await myAxios.get(`/order/list?page=${page}&pageSize=${pageSize}`);
     if (response.data && response.data.code === 200) {
       // Format the createTime field
-      orderList.value = response.data.data.list.map(order => ({
-        ...order,
-        createTime: dayjs(order.createTime).format('YYYY-MM-DD HH:mm:ss'), // Format time
+      const responseData = response.data.data;
+      // 映射后端返回的字段到前端
+      orderList.value = responseData.data.map(order => ({
+        id: order.id,
+        orderName: order.order_name,
+        lawyerId: order.lawyer_id,
+        clientId: order.client_id,
+        jid: order.jid,
+        createTime: dayjs(order.create_time).format('YYYY-MM-DD HH:mm:ss'), // 格式化时间
       }));
     } else {
       console.error('Invalid response data:', response.data);

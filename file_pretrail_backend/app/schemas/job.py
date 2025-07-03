@@ -27,6 +27,30 @@ class NewJobListForClientVO(BaseModel):
     class Config:
         orm_mode = True  # 允许从 ORM 对象转换
 
+class JobListForLawyerVO(BaseModel):
+    job_id: int
+    job_name: str
+    job_type: int
+    client_name: Optional[str] = None
+    client_budget: int
+    issue_date: datetime
+
+    class Config:
+        orm_mode = True  # 允许从 ORM 对象转换
+
+class NewJobListForLawyerVO(BaseModel):
+    job_id: int
+    job_name: str
+    job_type: int
+    job_intro: Optional[str] = None
+    client_name: Optional[str] = None
+    client_budget: int
+    issue_date: datetime
+    update_time: datetime
+
+    class Config:
+        orm_mode = True  # 允许从 ORM 对象转换
+
 
 class JobCreateRequest(BaseModel):
     job_name: str  # 工单名称
@@ -57,6 +81,23 @@ class JobResponse(BaseModel):
     }
 
 
+class JobDetailsVO(BaseModel):
+    job_id: int
+    job_name: str
+    job_type: int
+    job_intro: str
+    client_id: int
+    client_name: Optional[str] = None
+    client_budget: int
+    expected_time: datetime
+    issue_date: datetime
+    file_content: Optional[str] = None
+    path: Optional[str] = None
+    file_name: Optional[str] = None
+
+    class Config:
+        orm_mode = True  # 允许从 ORM 对象转换
+
 class JobDetailsForClientVO(BaseModel):
     job_id: int
     job_name: str
@@ -76,6 +117,25 @@ class JobDetailsForClientVO(BaseModel):
     lawyer_comment: Optional[str]
     update_time: datetime
     due_law: Optional[datetime]
+
+    class Config:
+        orm_mode = True  # 允许从 ORM 对象转换
+
+class JobDetailsForAcceptVO(BaseModel):
+    job_id: int
+    job_name: str
+    job_type: int
+    job_intro: str
+    client_id: int
+    client_account: Optional[str] = None
+    client_name: Optional[str] = None
+    client_phone: Optional[str] = None
+    client_email: Optional[str] = None
+    client_budget: int
+    issue_date: datetime
+    file_content: Optional[str] = None
+    path: Optional[str] = None
+    file_name: Optional[str] = None
 
     class Config:
         orm_mode = True  # 允许从 ORM 对象转换

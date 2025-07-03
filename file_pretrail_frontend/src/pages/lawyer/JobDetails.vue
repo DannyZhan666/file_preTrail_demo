@@ -74,6 +74,7 @@ import {useRoute, useRouter} from 'vue-router';
 import {ElMessage} from 'element-plus';
 import PdfViewer from 'pdf-viewer-vue3';
 import dayjs from 'dayjs';
+import myAxios from "@/request";
 
 
 const jobId = ref(null);
@@ -118,14 +119,27 @@ const fetchJobDetails = async () => {
     const id = route.params.id;
     if (!id) throw new Error('无效的工单ID');
 
-    const response = await axios.get(`/job/details?id=${id}`);
-    jobInfo.value = response.data.data;
+    const response = await myAxios.get(`/job/details?id=${id}`);
+    const data = response.data.data;
+
+    jobInfo.value = {
+      jobId: data.job_id,
+      jobName: data.job_name,
+      jobType: data.job_type,
+      jobIntro: data.job_intro,
+      clientName: data.client_name,
+      clientBudget: data.client_budget,
+      expectedTime: dayjs(data.expected_time).format('YYYY-MM-DD HH:mm:ss'),
+      issueDate: dayjs(data.issue_date).format('YYYY-MM-DD HH:mm:ss'),
+      fileName: data.file_name,
+      filePath: data.path,
+    };
 
     lawyerInfo.value = {
       lawyerBudget: '',
       lawyerComment: ''
     };
-    const blob = base64ToBlob(response.data.data.fileContent);
+    const blob = base64ToBlob(data.file_content);
     pdfUrl.value = URL.createObjectURL(blob);
 
   } catch (err: any) {
@@ -156,7 +170,7 @@ const submitForm = async () => {
   });
 
   try {
-    const response = await axios.post('/job/newJob', postData);
+    const response = await myAxios.post('/job/newJob', postData);
     console.log('提交表单成功:', response.data);
     ElMessage.success('提交成功');
     changePage('/jobList');

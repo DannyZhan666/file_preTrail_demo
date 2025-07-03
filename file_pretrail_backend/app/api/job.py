@@ -10,7 +10,8 @@ from app.models.file import MyFile
 from app.models.job import Job
 from app.models.user import User
 from app.schemas.job import JobCreateRequest, JobResponse, JobDetailsForClientVO
-from app.services.job_service import list_raw_job_for_client, get_job_details, list_new_job_for_client
+from app.services.job_service import list_raw_job_for_client, list_new_job_for_client, \
+    list_raw_job_for_lawyer, details_for_client, details, list_new_job_for_lawyer, details_for_accept
 from app.core.database import get_db
 from app.utils.result_utils import ResultUtils
 
@@ -44,6 +45,36 @@ async def list_new_job_for_client_api(page: int = 1, pageSize: int = 10, db: Ses
         return ResultUtils.success(job_list)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+@router.get("/list")
+async def list_raw_job_for_lawyer_api(page: int, pageSize: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    获取律师未处理的工单列表，分页查询。
+    """
+    lawyer_id = current_user.id  # 当前用户是律师
+    if not lawyer_id:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    try:
+        # 调用 service 层获取未处理的工单列表
+        job_list = list_raw_job_for_lawyer(page, pageSize, lawyer_id, db)
+        return ResultUtils.success(job_list)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.get("/listNewJobForLawyer")
+async def list_new_job_for_lawyer_api(page: int, pageSize: int, db: Session = Depends(get_db),
+                                  current_user: User = Depends(get_current_user)):
+    """
+    获取律师的新工单列表，分页查询。
+    """
+    lawyer_id = current_user.id  # 获取当前用户ID
+    if not lawyer_id:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    # 调用 service 层获取分页后的新工单列表
+    job_list = list_new_job_for_lawyer(page, pageSize, lawyer_id, db)
+    return ResultUtils.success(job_list)
 
 @router.post("/create")
 async def create_job(
@@ -84,8 +115,25 @@ async def create_job(
     # return ResultUtils.success({"data": {"jobId": new_job.id}})
     return ResultUtils.success({"data": JobResponse.from_orm(new_job)})  # 返回创建的工单对象（或根据需求返回工单 ID）
 
+
+@router.get("/details")
+async def get_job_details(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    获取工单详情接口
+    """
+    user_id = current_user.id  # 获取当前用户ID
+    if not user_id:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    # 调用 service 层获取工单详情
+    job_details = details(id, user_id, db)
+    if not job_details:
+        raise HTTPException(status_code=404, detail="工单未找到")
+
+    return ResultUtils.success(job_details)
+
 @router.get("/detailsForClient")
-async def details_for_client(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def details_for_client_api(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     获取工单详情接口，用户登录后才能查看工单。
     """
@@ -95,8 +143,25 @@ async def details_for_client(id: int, db: Session = Depends(get_db), current_use
 
     try:
         # 调用 service 层获取工单详情
-        job_details = get_job_details(id, db, current_user.id)
+        job_details = details_for_client(id, db, current_user.id)
         return ResultUtils.success(job_details)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+
+@router.get("/detailsForAccept")
+async def get_job_details_for_accept(id: int, db: Session = Depends(get_db),
+                                     current_user: User = Depends(get_current_user)):
+    """
+    获取工单的详细信息以供接收
+    """
+    user_id = current_user.id  # 获取当前用户ID
+    if not user_id:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    # 调用 service 层获取工单详细信息
+    job_details = details_for_accept(id, user_id, db)
+    if not job_details:
+        raise HTTPException(status_code=404, detail="工单未找到")
+
+    return ResultUtils.success(job_details)

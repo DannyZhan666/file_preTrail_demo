@@ -62,6 +62,7 @@ import {useRoute, useRouter} from 'vue-router';
 import {ElMessage} from 'element-plus';
 import PdfViewer from 'pdf-viewer-vue3';
 import dayjs from 'dayjs';
+import myAxios from "@/request";
 
 
 const jobId = ref(null);
@@ -105,14 +106,28 @@ const fetchJobDetails = async () => {
     const id = route.params.id;
     if (!id) throw new Error('无效的工单ID');
 
-    const response = await axios.get(`/job/detailsForAccept?id=${id}`);
-    jobInfo.value = response.data.data;
+    const response = await myAxios.get(`/job/detailsForAccept?id=${id}`);
+    const data = response.data.data;
+
+    jobInfo.value = {
+      jobName: data.job_name,
+      jobType: data.job_type,
+      jobIntro: data.job_intro,
+      clientAccount: data.client_account,
+      clientName: data.client_name,
+      clientPhone: data.client_phone,
+      clientEmail: data.client_email,
+      clientBudget: data.client_budget,
+      issueDate: dayjs(data.issue_date).format('YYYY-MM-DD HH:mm:ss'),
+      fileName: data.file_name,
+      filePath: data.path,
+    };
 
     lawyerInfo.value = {
       lawyerBudget: '',
       lawyerComment: ''
     };
-    const blob = base64ToBlob(response.data.data.fileContent);
+    const blob = base64ToBlob(data.file_content);
     pdfUrl.value = URL.createObjectURL(blob);
 
   } catch (err: any) {
