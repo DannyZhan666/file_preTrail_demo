@@ -1,20 +1,11 @@
 <template>
   <div>
     <!-- 操作面板 -->
-    <el-card class="narrow-card">
-      <div>
-        <h2 class="my-title">订单管理</h2>
-        <el-input
-            v-model="searchKey"
-            style="width: 240px"
-            @keyup.enter.native="refresh(1)"
-            placeholder="订单号 / 客户名"
-        ></el-input>
-        <el-button type="primary" icon="el-icon-search" @click="refresh(1)">搜索</el-button>
-        <el-button type="primary" @click="createOrder()">创建订单</el-button>
+    <el-card class="job-title">
+      <div class="title-container">
+        <h2 class="my-title">订单列表</h2>
       </div>
     </el-card>
-
     <!-- 订单列表 -->
     <el-card class="narrow-card">
       <el-table :data="orderList" class="my-el-table">
@@ -33,6 +24,10 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pagination-buttons">
+        <el-button @click="handlePreviousPage" :disabled="page === 1">上一页</el-button>
+        <el-button @click="handleNextPage">下一页</el-button>
+      </div>
     </el-card>
   </div>
 </template>
@@ -52,10 +47,12 @@ const form = ref({
   customerName: '',
   createTime: '',
 });
+const page = ref(1); // 当前页码，初始为1
+const pageSize = ref(10); // 每页条数，初始为10
 
-const fetchOrders = async (page = 1, pageSize = 10) => {
+const fetchOrders = async () => {
   try {
-    const response = await myAxios.get(`/order/list?page=${page}&pageSize=${pageSize}`);
+    const response = await myAxios.get(`/order/list?page=${page.value}&pageSize=${pageSize.value}`);
     if (response.data && response.data.code === 200) {
       // Format the createTime field
       const responseData = response.data.data;
@@ -74,6 +71,18 @@ const fetchOrders = async (page = 1, pageSize = 10) => {
   } catch (error) {
     console.error('Error fetching orders:', error);
     ElMessage.error('获取订单列表失败');
+  }
+};
+
+const handleNextPage = () => {
+  page.value += 1; // 下一页
+  fetchWorkOrders();
+};
+
+const handlePreviousPage = () => {
+  if (page.value > 1) {
+    page.value -= 1; // 上一页
+    fetchWorkOrders();
   }
 };
 
@@ -119,9 +128,43 @@ onMounted(() => {
 </script>
 
 <style scoped>
+
+.job-title {
+  width: 66% !important;
+  margin: 0 auto;
+  background-color: #fff !important;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 1px;
+}
+
+.title-container {
+  display: flex;
+  justify-content: center;
+}
+
+/* 标题样式调整 */
+.my-title {
+  text-align: center;
+  color: #1890ff !important;
+  margin: 0 auto; /* 水平居中 */
+  margin-bottom: 0px !important;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* 增加卡片间垂直间距 */
+.job-title + .narrow-card {
+  margin-top: 30px !important;
+}
 .narrow-card {
-  width: 70%; /* 设置卡片宽度为页面宽度的80% */
-  margin: 10px 300px; /* 居中显示 */
+  width: 85% !important; /* 与标题卡片宽度一致 */
+  margin: 0 auto; /* 水平居中 */
+  background-color: #fff !important; /* 移除黄色背景 */
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05); /* 添加阴影提升层次感 */
+  padding: 20px;
+  min-height: 600px; /* 保证与标题卡片高度一致 */
 }
 
 .my-title {
@@ -130,24 +173,16 @@ onMounted(() => {
   color: #333;
 }
 
-.buy {
-  float: right;
-  margin-right: 20px;
-  margin-bottom: 10px;
-}
-
-.mid-input {
-  width: 100%;
-}
-
-.create-dialog-btn {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-}
-
 .my-el-table {
   width: 100%;
   margin-top: 20px;
 }
+
+.pagination-buttons {
+  display: flex;
+  justify-content: center; /* 居中对齐 */
+  margin-top: 20px; /* 往下移一点 */
+  gap: 10px; /* 按钮之间的间距 */
+}
+
 </style>

@@ -1,8 +1,12 @@
 <template>
   <div>
+    <el-card class="job-title">
+      <div class="title-container">
+        <h2 class="my-title">已接工单</h2>
+      </div>
+    </el-card>
     <!-- 工单列表 -->
     <el-card class="narrow-card">
-      <h2 class="my-title" style="margin-bottom: 20px">已接工单</h2>
       <el-table :data="workOrderList" style="width: 100%">
         <el-table-column type="index" label="序列" width="100" align="center"/>
         <el-table-column prop="lawyerName" label="接单律师" width="auto" align="center"/>
@@ -22,6 +26,10 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pagination-buttons">
+        <el-button @click="handlePreviousPage" :disabled="page === 1">上一页</el-button>
+        <el-button @click="handleNextPage">下一页</el-button>
+      </div>
     </el-card>
   </div>
 </template>
@@ -57,6 +65,8 @@ const form = ref({
   myFile: [],
   clientBudget: ''
 });
+const page = ref(1); // 当前页码，初始为1
+const pageSize = ref(10); // 每页条数，初始为10
 
 const jobTypeMapping: { [key: number]: string } = {
   1: '房地产',
@@ -66,9 +76,9 @@ const jobTypeMapping: { [key: number]: string } = {
 
 const workOrderList = ref([]);
 
-const fetchWorkOrders = async (page = 1, pageSize = 10) => {
+const fetchWorkOrders = async () => {
   try {
-    const response = await myAxios.get(`/job/listNewJobForClient?page=${page}&pageSize=${pageSize}`);
+    const response = await myAxios.get(`/job/listNewJobForClient?page=${page.value}&pageSize=${pageSize.value}`);
     if (response.data && response.data.code === 200) {
       // console.log(response.data.data);
       workOrderList.value = response.data.data.map((job: any) => ({
@@ -91,9 +101,21 @@ const fetchWorkOrders = async (page = 1, pageSize = 10) => {
   }
 };
 
+const handleNextPage = () => {
+  page.value += 1; // 下一页
+  fetchWorkOrders();
+};
+
+const handlePreviousPage = () => {
+  if (page.value > 1) {
+    page.value -= 1; // 上一页
+    fetchWorkOrders();
+  }
+};
+
 const handleDetail = (jobId: any) => {
   router.push({
-    name: 'jobDetails_client',
+    name: 'JobDetails_client_accept',
     params: {id: jobId}
   });
 };
@@ -149,48 +171,56 @@ onMounted(() => {
 
 <style scoped>
 
-.narrow-card {
-  width: 70%; /* 设置卡片宽度为页面宽度的80% */
-  /*margin: 0 auto; 居中置顶显示 */
-  margin: 100px 300px; /* 居中显示 */
+.job-title {
+  width: 66% !important;
+  margin: 0 auto;
+  background-color: #fff !important;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 1px;
 }
 
+.title-container {
+  display: flex;
+  justify-content: center;
+}
+
+/* 标题样式调整 */
 .my-title {
+  text-align: center;
+  color: #1890ff !important;
+  margin: 0 auto; /* 水平居中 */
+  margin-bottom: 0px !important;
   font-size: 24px;
   font-weight: bold;
-  color: #333;
 }
 
-.buy {
-  float: right;
-  margin-right: 20px;
-  margin-bottom: 10px;
+/* 增加卡片间垂直间距 */
+.job-title + .narrow-card {
+  margin-top: 30px !important;
 }
 
-.mid-input {
-  width: 100%;
+.narrow-card {
+  width: 85% !important; /* 与标题卡片宽度一致 */
+  margin: 0 auto; /* 水平居中 */
+  background-color: #fff !important; /* 移除黄色背景 */
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05); /* 添加阴影提升层次感 */
+  padding: 20px;
+  min-height: 600px; /* 保证与标题卡片高度一致 */
 }
 
-.create-dialog-btn {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-}
-
-.my-el-table {
-  width: 100%;
-  margin-top: 20px;
-}
-
-.el-form-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
 
 .el-form-item label {
   flex-shrink: 0;
   width: 100px;
+}
+
+.pagination-buttons {
+  display: flex;
+  justify-content: center; /* 居中对齐 */
+  margin-top: 20px; /* 往下移一点 */
+  gap: 10px; /* 按钮之间的间距 */
 }
 
 @media (max-width: 768px) {

@@ -130,22 +130,10 @@ const generateItems = (): MenuProps["items"] => {
         title: "工单列表",
       },
       {
-        key: "/jobDetails",
-        icon: () => h(UnorderedListOutlined),
-        label: "工单详情",
-        title: "工单详情",
-      },
-      {
         key: "/jobListForAccept",
         icon: () => h(UnorderedListOutlined),
         label: "工单列表(已确认)",
         title: "工单详情(已确认)",
-      },
-      {
-        key: "/jobDetailsForAccept",
-        icon: () => h(UnorderedListOutlined),
-        label: "已确认工单详情",
-        title: "已确认工单详情",
       },
       {
         key: "/orderList_Lawyer",

@@ -1,16 +1,13 @@
 <template>
   <div>
     <!-- 操作面板 -->
-    <el-card>
-      <div>
+    <el-card class="job-title">
+      <div class="title-container">
         <h2 class="my-title">律师列表</h2>
-        <el-input v-model="searchKey" style="width: 240px" @keyup.enter.native="refresh(1)"
-                  placeholder="姓名 / 执业证号"></el-input>
-        <el-button type="primary" icon="el-icon-search" @click="refresh(1)">搜索</el-button>
       </div>
     </el-card>
     <!-- 律师列表 -->
-    <el-card>
+    <el-card class="main-card">
       <el-table :data="lawyerList" class="my-el-table">
         <el-table-column label="序号" type="index" width="150">
         </el-table-column>
@@ -47,6 +44,10 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pagination-buttons">
+        <el-button @click="handlePreviousPage" :disabled="page === 1">上一页</el-button>
+        <el-button @click="handleNextPage">下一页</el-button>
+      </div>
     </el-card>
   </div>
 </template>
@@ -59,10 +60,12 @@ import myAxios from "@/request";
 
 const searchKey = ref('');
 const lawyerList = ref([]);
+const page = ref(1); // 当前页码，初始为1
+const pageSize = ref(10); // 每页条数，初始为10
 
-const fetchLawyers = async (page = 1, pageSize = 10) => {
+const fetchLawyers = async () => {
   try {
-    const response = await myAxios.get(`/user/lawyerList?page=${page}&pageSize=${pageSize}`);
+    const response = await myAxios.get(`/user/lawyerList?page=${page.value}&pageSize=${pageSize.value}`);
     if (response.data && response.data.code === 200) {
       // console.log(response.data);
       lawyerList.value = response.data.data.data.map((lawyer) => ({
@@ -80,6 +83,18 @@ const fetchLawyers = async (page = 1, pageSize = 10) => {
     }
   } catch (error) {
     console.error('Error fetching lawyers:', error);
+  }
+};
+
+const handleNextPage = () => {
+  page.value += 1; // 下一页
+  fetchWorkOrders();
+};
+
+const handlePreviousPage = () => {
+  if (page.value > 1) {
+    page.value -= 1; // 上一页
+    fetchWorkOrders();
   }
 };
 
@@ -106,25 +121,49 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.search-input {
-  width: 300px;
+.job-title {
+  width: 66% !important;
+  margin: 0 auto;
+  background-color: #fff !important;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 1px;
 }
 
-.updateForm {
-  width: 80%;
+.title-container {
+  display: flex;
+  justify-content: center;
 }
 
-.btn-release {
-  float: right;
-  margin-top: 10px;
-  margin-right: 50px;
+/* 标题样式调整 */
+.my-title {
+  text-align: center;
+  color: #1890ff !important;
+  margin: 0 auto; /* 水平居中 */
+  margin-bottom: 0px !important;
+  font-size: 24px;
+  font-weight: bold;
 }
 
-.form-releaseTask {
-  height: 300px;
+/* 主卡片样式重置 */
+.main-card {
+  width: 85% !important; /* 与标题卡片宽度一致 */
+  margin: 0 auto; /* 水平居中 */
+  background-color: #fff !important; /* 移除黄色背景 */
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05); /* 添加阴影提升层次感 */
+  padding: 20px;
+  min-height: 600px; /* 保证与标题卡片高度一致 */
 }
 
-.input-content-task {
-  width: 500px;
+/* 增加卡片间垂直间距 */
+.job-title + .main-card {
+  margin-top: 30px !important;
+}
+.pagination-buttons {
+  display: flex;
+  justify-content: center; /* 居中对齐 */
+  margin-top: 20px; /* 往下移一点 */
+  gap: 10px; /* 按钮之间的间距 */
 }
 </style>

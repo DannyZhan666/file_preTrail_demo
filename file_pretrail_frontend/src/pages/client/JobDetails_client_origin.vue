@@ -1,16 +1,16 @@
 <template>
   <div class="job-content">
     <el-row :gutter="30">
-      <el-col :span="13">
+      <el-col :span="11">
         <!-- 修改PDF展示部分 -->
         <el-card>
           <div class="pdf-header">
-            <h2 class="center-title">工单关联文件</h2>
-<!--                        <div>
-                          <el-button type="primary" icon="el-icon-download" @click="downloadFile" :disabled="!pdfUrl">
-                            下载文件
-                          </el-button>
-                        </div>-->
+            <h2>工单关联文件</h2>
+            <!--            <div>-->
+            <!--              <el-button type="primary" icon="el-icon-download" @click="downloadFile" :disabled="!pdfUrl">-->
+            <!--                下载文件-->
+            <!--              </el-button>-->
+            <!--            </div>-->
           </div>
 
           <!-- 如果 pdfUrl 不存在，显示加载提示 -->
@@ -19,49 +19,48 @@
             正在加载PDF文件...
           </div>
           <!-- 如果 pdfUrl 存在，就渲染 PDF -->
-          <embed v-else :src="pdfUrl" height="700px" width="950px"/>
+          <embed v-else :src="pdfUrl" height="670px" width="800px"/>
           <!--          <img src="https://file-pretrail.oss-cn-hangzhou.aliyuncs.com/%E5%B9%BF%E5%9C%BA.png">-->
 
         </el-card>
       </el-col>
-      <el-col :span="11">
+      <el-col :span="12">
         <el-collapse v-model="activeNames">
-          <el-collapse-item title="工单信息" name="1">
+          <el-collapse-item title="文件预审信息" name="1">
             <el-descriptions class="margin-top" :column="1" :size="size" border>
               <el-descriptions-item label="工单名">{{ jobInfo.jobName }}</el-descriptions-item>
               <el-descriptions-item label="工单种类">{{ jobTypeName }}</el-descriptions-item>
               <el-descriptions-item label="工单简介">{{ jobInfo.jobIntro }}</el-descriptions-item>
-              <el-descriptions-item label="发布用户名">{{ jobInfo.clientName }}</el-descriptions-item>
               <el-descriptions-item label="客户预算">{{ jobInfo.clientBudget }} 元</el-descriptions-item>
               <el-descriptions-item label="发布日期">{{dayjs(jobInfo.issueDate).format('YYYY年MM月DD日 HH:mm:ss') }}</el-descriptions-item>
-              <el-descriptions-item label="预期完成时间">{{dayjs(jobInfo.expectedTime).format('YYYY年MM月DD日 HH:mm:ss') }}</el-descriptions-item>
-              <el-descriptions-item label="法律文件名">{{ jobInfo.fileName }}</el-descriptions-item>
+              <el-descriptions-item label="文件名">{{ jobInfo.fileName }}</el-descriptions-item>
             </el-descriptions>
           </el-collapse-item>
-          <el-collapse-item title="律师填写" name="2">
+          <el-collapse-item title="工单信息" name="2">
             <el-descriptions class="margin-top" :column="1" :size="size" border>
-              <el-descriptions-item label="您的预算">
-                <el-input v-model="lawyerInfo.lawyerBudget"></el-input>
-              </el-descriptions-item>
-              <el-descriptions-item label="您的预期时间">
-                <el-date-picker
-                    v-model="lawyerInfo.lawyerExpectedTime"
-                    type="datetime"
-                    placeholder="选择您的预期时间"
-                    style="width: 100%;"
-                />
-              </el-descriptions-item>
-              <el-descriptions-item label="工单批注">
-                <el-input v-model="lawyerInfo.lawyerComment"></el-input>
-              </el-descriptions-item>
+              <el-descriptions-item label="工单名">{{ jobInfo.jobName }}</el-descriptions-item>
+              <el-descriptions-item label="工单种类">{{ jobTypeName }}</el-descriptions-item>
+              <el-descriptions-item label="工单简介">{{ jobInfo.jobIntro }}</el-descriptions-item>
+              <el-descriptions-item label="客户预算">{{ jobInfo.clientBudget }} 元</el-descriptions-item>
+              <el-descriptions-item label="发布日期">{{dayjs(jobInfo.issueDate).format('YYYY年MM月DD日 HH:mm:ss') }}</el-descriptions-item>
+              <el-descriptions-item label="我的预期完成时间">{{dayjs(jobInfo.due).format('YYYY年MM月DD日 HH:mm:ss') }}</el-descriptions-item>
+              <el-descriptions-item label="文件名">{{ jobInfo.fileName }}</el-descriptions-item>
             </el-descriptions>
           </el-collapse-item>
         </el-collapse>
         <!-- 添加确认和取消按钮 -->
         <div class="button-group">
           <el-button type="primary" @click="submitForm">确认</el-button>
-          <el-button @click="changePage('/jobList')">取消</el-button>
+          <el-button @click="changePage('/JobManage')">取消</el-button>
         </div>
+        <!--        <el-card>-->
+        <!--          <el-descriptions class="margin-top" title="工单信息&#45;&#45;律师" :column="2" :size="size" border>-->
+        <!--            <el-descriptions-item v-for="(value, key) in jobInfo" :key="key" :label="key"-->
+        <!--                                  v-if="key !== 'path' && key !== 'fileContent'">-->
+        <!--              {{ value !== null && value !== undefined ? value : '-' }}-->
+        <!--            </el-descriptions-item>-->
+        <!--          </el-descriptions>-->
+        <!--        </el-card>-->
       </el-col>
     </el-row>
   </div>
@@ -77,23 +76,17 @@ import dayjs from 'dayjs';
 import myAxios from "@/request";
 
 
-const jobId = ref(null);
 const jobInfo = ref({});
-const lawyerInfo = ref({
-  lawyerBudget: '',
-  lawyerComment: '',
-  lawyerExpectedTime: '' // 新增字段
-});
 const loading = ref(true);
 const error = ref(null);
 const pdfUrl = ref(null);
 const size = ref('small');
-const activeNames = ref(['1', '2']); // 默认展开所有项
+const activeNames = ref(['1', '2', '3']); // 默认展开第一个
 
 const route = useRoute();
 const router = useRouter();
 
-const jobTypeMapping = {
+const jobTypeMapping: { [key: number]: string } = {
   1: '房地产',
   2: '婚姻',
   3: '公司法'
@@ -121,6 +114,7 @@ const fetchJobDetails = async () => {
 
     const response = await myAxios.get(`/job/details?id=${id}`);
     const data = response.data.data;
+    console.log(data)
 
     jobInfo.value = {
       jobId: data.job_id,
@@ -135,10 +129,6 @@ const fetchJobDetails = async () => {
       filePath: data.path,
     };
 
-    lawyerInfo.value = {
-      lawyerBudget: '',
-      lawyerComment: ''
-    };
     const blob = base64ToBlob(data.file_content);
     pdfUrl.value = URL.createObjectURL(blob);
 
@@ -155,34 +145,14 @@ const downloadFile = () => {
 };
 
 const submitForm = async () => {
-  /*const postData = Object.assign({
-    jobId: route.params.id,
-    lawyerBudget: 0,
-    lawyerComment: '',
-    lawyerExpectedTime: '', // 新增字段
-    issueDate: '',
-  }, jobInfo.value, {
-    lawyerBudget: lawyerInfo.value.lawyerBudget || 0,
-    lawyerComment: lawyerInfo.value.lawyerComment || '',
-    lawyerExpectedTime: lawyerInfo.value.lawyerExpectedTime
-        ? dayjs(lawyerInfo.value.lawyerExpectedTime).format('YYYY-MM-DDTHH:mm:ss') // 格式化为 ISO 8601 格式
-        : ''
-  });*/
-
   const postData = {
-    job_id: route.params.id,
-    lawyer_budget: lawyerInfo.value.lawyerBudget || 0,
-    lawyer_comment: lawyerInfo.value.lawyerComment || '',
-    lawyer_expected_time: lawyerInfo.value.lawyerExpectedTime
-        ? dayjs(lawyerInfo.value.lawyerExpectedTime).format('YYYY-MM-DDTHH:mm:ss') // 格式化为 ISO 8601 格式
-        : ''
+    job_id: parseInt(Array.isArray(route.params.id) ? route.params.id[0] : route.params.id, 10) // 将工单 ID 转换为整数类型 // 将工单 ID 包装为对象，添加变量名
   };
-
   try {
-    const response = await myAxios.post('/job/newJob', postData);
+    const response = await myAxios.post('/job/acceptJob', postData);
     console.log('提交表单成功:', response.data);
     ElMessage.success('提交成功');
-    changePage('/jobList');
+    changePage('/newJobListForClient');
   } catch (error) {
     console.error('提交表单失败:', error);
     ElMessage.error('提交失败');
@@ -209,10 +179,40 @@ onMounted(() => {
 </script>
 
 <style scoped>
-
-.center-title {
-  text-align: center;
+.order-content {
+  display: flex;
 }
+
+.el-row {
+  margin-bottom: 20px;
+}
+
+.el-col {
+  padding: 10px;
+}
+
+.my-el-table {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.embed {
+  width: 100%;
+  height: auto;
+}
+
+.pdf-container {
+  width: 100%;
+  height: 600px; /* 固定高度 */
+  overflow-y: scroll; /* 垂直滚动 */
+}
+
 .loading-text {
   text-align: center;
   font-size: 16px;
@@ -220,9 +220,11 @@ onMounted(() => {
 }
 
 .button-group {
+  position: fixed;
+  bottom: 60px; /* 距离底部 20px */
+  right: 80px; /* 距离右侧 20px */
   display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
+  gap: 10px; /* 按钮之间的间距 */
 }
 
 .button-group .el-button {

@@ -3,7 +3,7 @@
     <!-- 操作面板 -->
     <el-card class="job-title">
       <div class="title-container">
-        <h2 class="my-title">工单列表</h2>
+        <h2 class="my-title">已确认工单列表</h2>
       </div>
     </el-card>
     <el-card class="main-card">
@@ -34,13 +34,17 @@
 
         <el-table-column label="操作" align="center">
           <template v-slot="scope">
-            <el-button type="success" @click="handleDetail(scope.row.jobId)">确认</el-button>
+            <el-button type="success" @click="handleDetail(scope.row.jobId)">详情</el-button>
             <el-popconfirm title="确定删除吗？" @confirm="deleteWorkOrder(scope.row.jobId)">
               <el-button type="danger" slot="reference">删除</el-button>
             </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
+      <div class="pagination-buttons">
+        <el-button @click="handlePreviousPage" :disabled="page === 1">上一页</el-button>
+        <el-button @click="handleNextPage">下一页</el-button>
+      </div>
     </el-card>
   </div>
 </template>
@@ -64,6 +68,8 @@ interface Job {
 }
 
 const workOrderList = ref([]);
+const page = ref(1); // 当前页码，初始为1
+const pageSize = ref(10); // 每页条数，初始为10
 
 const router = useRouter();
 
@@ -73,9 +79,9 @@ const jobTypeMapping: { [key: number]: string } = {
   3: '公司法'
 };
 
-const fetchWorkOrders = async (page = 1, pageSize = 10) => {
+const fetchWorkOrders = async () => {
   try {
-    const response = await myAxios.get(`/job/listNewJobForLawyer?page=${page}&pageSize=${pageSize}`);
+    const response = await myAxios.get(`/job/listNewJobForLawyer?page=${page.value}&pageSize=${pageSize.value}`);
     if (response.data && response.data.code === 200) {
       workOrderList.value = response.data.data.map((job: any) => ({
         jobId: job.job_id,
@@ -92,6 +98,18 @@ const fetchWorkOrders = async (page = 1, pageSize = 10) => {
     }
   } catch (error) {
     console.error('Error fetching work orders:', error);
+  }
+};
+
+const handleNextPage = () => {
+  page.value += 1; // 下一页
+  fetchWorkOrders();
+};
+
+const handlePreviousPage = () => {
+  if (page.value > 1) {
+    page.value -= 1; // 上一页
+    fetchWorkOrders();
   }
 };
 
@@ -143,6 +161,7 @@ onMounted(() => {
   margin: 0 auto; /* 水平居中 */
   margin-bottom: 0px !important;
   font-size: 24px;
+  font-weight: bold;
 }
 
 /* 主卡片样式重置 */
@@ -186,25 +205,12 @@ onMounted(() => {
   padding-right: 15px !important;
 }
 
-.search-input {
-  width: 300px;
+.pagination-buttons {
+  display: flex;
+  justify-content: center; /* 居中对齐 */
+  margin-top: 20px; /* 往下移一点 */
+  gap: 10px; /* 按钮之间的间距 */
 }
 
-.updateForm {
-  width: 80%;
-}
 
-.btn-release {
-  float: right;
-  margin-top: 10px;
-  margin-right: 50px;
-}
-
-.form-releaseTask {
-  height: 300px;
-}
-
-.input-content-task {
-  width: 500px;
-}
 </style>

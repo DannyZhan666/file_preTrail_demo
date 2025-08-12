@@ -1,12 +1,12 @@
 <template>
   <div>
-    <el-card>
-      <div class="info-first-card">
-        <h2 class="user-info-title">我的个人信息</h2>
+    <el-card class="job-title">
+      <div class="title-container">
+        <h2 class="my-title">工单列表</h2>
         <el-button class="save" @click="update" type="primary" style="margin-bottom: 20px">修改</el-button>
       </div>
     </el-card>
-    <el-card class="box-card user-info-card">
+    <el-card class="user-info-card">
       <el-descriptions title="我的个人信息" border>
         <el-descriptions-item
             :rowspan="2"
@@ -147,19 +147,43 @@ onMounted(() => {
 </script>
 
 <style scoped>
+
+.job-title {
+  width: 66% !important;
+  margin: 0 auto;
+  background-color: #fff !important;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 1px;
+}
+
+.title-container {
+  display: flex;
+  justify-content: center;
+}
+
+/* 标题样式调整 */
+.my-title {
+  text-align: center;
+  color: #1890ff !important;
+  margin: 0 auto; /* 水平居中 */
+  margin-bottom: 0px !important;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* 增加卡片间垂直间距 */
+.job-title + .user-info-card {
+  margin-top: 30px !important;
+}
 .user-info-card {
-  margin-top: 60px;
-}
-
-.user-info-title {
-  color: cornflowerblue;
-  float: left;
-  margin-top: -5px;
-}
-
-.user-info-data {
-  margin-top: 15px;
-  margin-left: 45%;
+  width: 85% !important; /* 与标题卡片宽度一致 */
+  margin: 0 auto; /* 水平居中 */
+  background-color: #fff !important; /* 移除黄色背景 */
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05); /* 添加阴影提升层次感 */
+  padding: 20px;
+  min-height: 600px; /* 保证与标题卡片高度一致 */
 }
 
 br {

@@ -25,7 +25,7 @@
         </el-card>
       </el-col>
       <el-col :span="12">
-        <el-collapse>
+        <el-collapse v-model="activeNames">
           <el-collapse-item title="文件预审信息" name="1">
             <el-descriptions class="margin-top" :column="1" :size="size" border>
               <el-descriptions-item label="工单名">{{ jobInfo.jobName }}</el-descriptions-item>
@@ -85,13 +85,12 @@ import dayjs from 'dayjs';
 import myAxios from "@/request";
 
 
-const jobId = ref(null);
 const jobInfo = ref({});
 const loading = ref(true);
 const error = ref(null);
 const pdfUrl = ref(null);
-const pageTotal = ref(30);
 const size = ref('small');
+const activeNames = ref(['1', '2', '3']); // 默认展开第一个
 
 const route = useRoute();
 const router = useRouter();
@@ -159,13 +158,11 @@ const downloadFile = () => {
 };
 
 const submitForm = async () => {
-  const postData = route.params.id;
+  const postData = {
+    job_id: parseInt(Array.isArray(route.params.id) ? route.params.id[0] : route.params.id, 10) // 将工单 ID 转换为整数类型 // 将工单 ID 包装为对象，添加变量名
+  };
   try {
-    const response = await myAxios.post('/job/acceptJob', postData, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await myAxios.post('/job/acceptJob', postData);
     console.log('提交表单成功:', response.data);
     ElMessage.success('提交成功');
     changePage('/newJobListForClient');

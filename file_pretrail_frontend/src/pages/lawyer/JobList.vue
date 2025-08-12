@@ -35,15 +35,19 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pagination-buttons">
+        <el-button @click="handlePreviousPage" :disabled="page === 1">上一页</el-button>
+        <el-button @click="handleNextPage">下一页</el-button>
+      </div>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import {ref, onMounted} from 'vue';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import { useRouter } from "vue-router";
+import {useRouter} from "vue-router";
 import myAxios from "@/request";
 
 interface Job {
@@ -57,6 +61,8 @@ interface Job {
 }
 
 const workOrderList = ref([]);
+const page = ref(1); // 当前页码，初始为1
+const pageSize = ref(10); // 每页条数，初始为10
 
 const router = useRouter();
 
@@ -66,9 +72,9 @@ const jobTypeMapping: { [key: number]: string } = {
   3: '公司法'
 };
 
-const fetchWorkOrders = async (page = 1, pageSize = 10) => {
+const fetchWorkOrders = async () => {
   try {
-    const response = await myAxios.get(`/job/list?page=${page}&pageSize=${pageSize}`);
+    const response = await myAxios.get(`/job/list?page=${page.value}&pageSize=${pageSize.value}`);
     if (response.data && response.data.code === 200) {
       workOrderList.value = response.data.data.map((job: any) => ({
         jobId: job.job_id,
@@ -87,14 +93,26 @@ const fetchWorkOrders = async (page = 1, pageSize = 10) => {
   }
 };
 
-const handleDetail = (jobId:any) => {
+const handleNextPage = () => {
+  page.value += 1; // 下一页
+  fetchWorkOrders();
+};
+
+const handlePreviousPage = () => {
+  if (page.value > 1) {
+    page.value -= 1; // 上一页
+    fetchWorkOrders();
+  }
+};
+
+const handleDetail = (jobId: any) => {
   router.push({
-    name:'jobDetails',
-    params: { id: jobId }
+    name: 'jobDetails',
+    params: {id: jobId}
   });
 };
 
-const deleteWorkOrder = async (id:any) => {
+const deleteWorkOrder = async (id: any) => {
   try {
     const response = await axios.delete(`/job/delete/${id}`);
     if (response.data && response.data.code === 200) {
@@ -135,12 +153,13 @@ onMounted(() => {
   margin: 0 auto; /* 水平居中 */
   margin-bottom: 0px !important;
   font-size: 24px;
+  font-weight: bold;
 }
 
 /* 主卡片样式重置 */
 .main-card {
   width: 85% !important; /* 与标题卡片宽度一致 */
-  margin: 0 auto;       /* 水平居中 */
+  margin: 0 auto; /* 水平居中 */
   background-color: #fff !important; /* 移除黄色背景 */
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05); /* 添加阴影提升层次感 */
@@ -178,25 +197,10 @@ onMounted(() => {
   padding-right: 15px !important;
 }
 
-.search-input {
-  width: 300px;
-}
-
-.updateForm {
-  width: 80%;
-}
-
-.btn-release {
-  float: right;
-  margin-top: 10px;
-  margin-right: 50px;
-}
-
-.form-releaseTask {
-  height: 300px;
-}
-
-.input-content-task {
-  width: 500px;
+.pagination-buttons {
+  display: flex;
+  justify-content: center; /* 居中对齐 */
+  margin-top: 20px; /* 往下移一点 */
+  gap: 10px; /* 按钮之间的间距 */
 }
 </style>

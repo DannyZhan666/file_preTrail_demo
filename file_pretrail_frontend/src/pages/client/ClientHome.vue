@@ -32,7 +32,7 @@
               <span>律师列表</span>
             </el-menu-item>
 
-            <el-menu-item index="jobDetails_client">
+            <el-menu-item index="JobDetails_client_accept">
               <i class="el-icon-document"></i>
               <span>工单详情</span>
             </el-menu-item>

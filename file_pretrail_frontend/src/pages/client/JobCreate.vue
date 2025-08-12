@@ -1,5 +1,12 @@
 <template>
+  <!-- 操作面板 -->
+  <el-card class="job-title">
+    <div class="title-container">
+      <h2 class="my-title">工单创建</h2>
+    </div>
+  </el-card>
   <div class="layout-container">
+
 
     <el-steps :active="currentStep" finish-status="success" direction="vertical" class="step-container">
       <el-step title="Step 1"/>
@@ -279,9 +286,36 @@ const resetForm = (formEl: FormInstance | undefined) => {
   display: flex;
   justify-content: center; /* 水平居中 */
   align-items: center; /* 垂直居中 */
-  height: 80vh; /* 占满视口高度 */
+  height: 70vh; /* 占满视口高度 */
+  width: 50%; /* 设置宽度为视口宽度的 90% */
+  margin: 0 auto; /* 通过自动外边距实现水平居中 */
   background-color: #f5f5f5; /* 可选：设置背景颜色 */
   gap: 50px; /* 设置左右两部分的间距 */
+}
+
+/* 标题片卡样式调整 */
+.job-title {
+  width: 66% !important;
+  margin: 0 auto;
+  background-color: #fff !important;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 1px;
+}
+
+/* 标题样式调整 */
+.my-title {
+  text-align: center;
+  color: #1890ff !important;
+  margin: 0 auto; /* 水平居中 */
+  margin-bottom: 0px !important;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* 增加卡片间垂直间距 */
+.job-title + .layout-container {
+  margin-top: 30px !important;
 }
 
 .step-container {
@@ -300,20 +334,5 @@ const resetForm = (formEl: FormInstance | undefined) => {
   width: 700px;
 }
 
-/*.table-container {
-  background-color: #fff; !* 可选：设置背景颜色 *!
-  padding: 20px; !* 内边距 *!
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); !* 可选：添加阴影 *!
-  border-radius: 8px; !* 可选：圆角 *!
-}*/
-
-.el-form {
-  width: 100%;
-  max-width: none;
-}
-
-.el-button {
-  margin-right: 10px;
-}
 
 </style>

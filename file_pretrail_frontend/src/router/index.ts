@@ -16,10 +16,12 @@ import OrderList from "@/pages/client/OrderList.vue";
 import UserInfo from "@/pages/client/UserInfo.vue";
 import JobCreate from "@/pages/client/JobCreate.vue";
 import NewJobListForClient from "@/pages/client/NewJobListForClient.vue";
-import JobDetails_client from "@/pages/client/JobDetails_client.vue";
+import JobDetailsClientAccept from "@/pages/client/JobDetails_client_accept.vue";
 import JobListForAccept from "@/pages/lawyer/JobListForAccept.vue";
 import JobDetailsForAccept from "@/pages/lawyer/JobDetailsForAccept.vue";
 import OrderDetails_client from "@/pages/client/orderDetails_client.vue";
+import JobDetails_client_origin from "@/pages/client/JobDetails_client_origin.vue";
+import JobDetails_client_accept from "@/pages/client/JobDetails_client_accept.vue";
 
 const routes: Array<RouteRecordRaw> = [
     {
@@ -72,10 +74,16 @@ const routes: Array<RouteRecordRaw> = [
                 component: LawyerList
             },
             {
-                path: '/jobDetails_client/:id?',
-                name: 'jobDetails_client',
+                path: '/JobDetails_client_origin/:id?',
+                name: 'JobDetails_client_origin',
                 meta: {title: "工单详情"},
-                component: JobDetails_client
+                component: JobDetails_client_origin
+            },
+            {
+                path: '/JobDetails_client_accept/:id?',
+                name: 'JobDetails_client_accept',
+                meta: {title: "工单详情（已接）"},
+                component: JobDetails_client_accept
             },
             {
                 path: '/orderList',
