@@ -3,15 +3,17 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.models.file import MyFile
 from app.models.job import Job
 from app.models.user import User
-from app.schemas.job import JobCreateRequest, JobResponse, JobDetailsForClientVO
+from app.schemas.job import JobCreateRequest, JobResponse, JobDetailsForClientVO, NewJobCreateRequest, AcceptJobRequest
 from app.services.job_service import list_raw_job_for_client, list_new_job_for_client, \
-    list_raw_job_for_lawyer, details_for_client, details, list_new_job_for_lawyer, details_for_accept
+    list_raw_job_for_lawyer, details_for_client, details, list_new_job_for_lawyer, details_for_accept, new_job, \
+    accept_job
 from app.core.database import get_db
 from app.utils.result_utils import ResultUtils
 
@@ -114,6 +116,38 @@ async def create_job(
 
     # return ResultUtils.success({"data": {"jobId": new_job.id}})
     return ResultUtils.success({"data": JobResponse.from_orm(new_job)})  # 返回创建的工单对象（或根据需求返回工单 ID）
+
+@router.post("/newJob")
+async def new_job_api(new_job_create_request: NewJobCreateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    创建一个新工单
+    """
+    user_id = current_user.id  # 获取当前用户ID
+    if not user_id:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    # 调用 service 层创建新工单
+    result = new_job(new_job_create_request, user_id, db)
+    if result == 0:
+        raise HTTPException(status_code=400, detail="工单不存在")
+
+    return result
+
+@router.post("/acceptJob")
+async def accept_job_api(req: AcceptJobRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    接收一个工单，并创建对应的订单
+    """
+    user_id = current_user.id  # 获取当前用户ID
+    if not user_id:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    # 调用 service 层接收工单
+    result = accept_job(req.job_id, user_id, db)
+    if result == -1:
+        raise HTTPException(status_code=500, detail="接收工单失败")
+
+    return result
 
 
 @router.get("/details")

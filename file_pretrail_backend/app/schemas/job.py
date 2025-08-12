@@ -63,6 +63,18 @@ class JobCreateRequest(BaseModel):
     class Config:
         orm_mode = True  # 支持 ORM 模型转换
 
+class NewJobCreateRequest(BaseModel):
+    job_id: int
+    lawyer_budget: int
+    lawyer_comment: Optional[str]
+    lawyer_expected_time: Optional[datetime]
+
+    class Config:
+        orm_mode = True  # 允许从 ORM 对象转换
+
+class AcceptJobRequest(BaseModel):
+    job_id: int
+
 class JobResponse(BaseModel):
     id: int
     job_name: str

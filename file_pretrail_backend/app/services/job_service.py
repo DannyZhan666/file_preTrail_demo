@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -7,7 +8,10 @@ from app.models.file import MyFile
 from app.models.job import Job
 from app.models.user import User
 from app.schemas.job import RawJobListForClientVO, JobDetailsForClientVO, NewJobListForClientVO, JobListForLawyerVO, \
-    JobDetailsVO, NewJobListForLawyerVO, JobDetailsForAcceptVO
+    JobDetailsVO, NewJobListForLawyerVO, JobDetailsForAcceptVO, NewJobCreateRequest
+from app.schemas.order import OrderCreateRequest
+from app.services.order_service import create_order
+from app.utils.error_code import ErrorCode
 from app.utils.result_utils import ResultUtils
 from sqlalchemy import or_
 
@@ -106,8 +110,13 @@ def list_raw_job_for_lawyer(page: int, page_size: int, lawyer_id: int, db: Sessi
     # 筛选出 job_status = 0 的工单，且其 job_name 不在 job_name_yes_status 中
     remaining_jobs = [job for job in job_list_no_status if job.job_name not in job_name_yes_status]
 
+    # 分页处理
+    start = (page - 1) * page_size
+    end = start + page_size
+    paged_jobs = remaining_jobs[start:end]
+
     # 批量转换 Job -> JobListForLawyerVO
-    job_list_for_lawyer = [convert_to_job_list_for_lawyer_vo(job, db) for job in remaining_jobs]
+    job_list_for_lawyer = [convert_to_job_list_for_lawyer_vo(job, db) for job in paged_jobs]
 
     return job_list_for_lawyer
 
@@ -264,3 +273,56 @@ def details_for_accept(job_id: int, user_id: int, db: Session) -> Optional[JobDe
 
     return job_details
 
+def new_job(new_job_create_request: NewJobCreateRequest, user_id: int, db: Session) -> int:
+    # 获取原始工单信息
+    origin_job = db.query(Job).filter(Job.id == new_job_create_request.job_id).first()
+    if not origin_job:
+        return 0  # 工单不存在
+
+    # 创建新的工单对象
+    new_job = Job(
+        job_name=origin_job.job_name,
+        job_type=origin_job.job_type,
+        job_intro=origin_job.job_intro,
+        file_id=origin_job.file_id,
+        client_id=origin_job.client_id,
+        client_budget=origin_job.client_budget,
+        due=origin_job.due,
+        lawyer_id=user_id,
+        lawyer_budget=new_job_create_request.lawyer_budget,
+        lawyer_comment=new_job_create_request.lawyer_comment,
+        due_law=new_job_create_request.lawyer_expected_time,
+        job_status=1,  # 状态为 1 表示新的工单
+        create_time=origin_job.create_time,  # 保持原工单的创建时间
+        update_time=datetime.now()
+    )
+
+    # 保存新的工单
+    db.add(new_job)
+    db.commit()
+    db.refresh(new_job)
+
+    return 1  # 返回成功标识
+
+def accept_job(job_id: int, user_id: int, db: Session) -> int:
+    # 获取工单信息
+    my_job = db.query(Job).filter(Job.id == job_id).first()
+    if not my_job:
+        return 0  # 工单不存在
+
+    # 更新工单状态为已接收（状态 2）
+    my_job.job_status = 2
+
+    # 创建订单请求
+    order_create_request = OrderCreateRequest(
+        order_name=my_job.job_name,
+        job_id=job_id
+    )
+
+    # 调用订单服务创建订单
+    create_order(order_create_request, user_id, db)
+
+    # 保存更新后的工单
+    db.commit()
+
+    return 1  # 返回成功标识

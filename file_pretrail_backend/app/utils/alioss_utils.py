@@ -8,8 +8,8 @@ load_dotenv()  # 加载 .env 文件
 
 # 阿里云 OSS 配置信息（假设已经配置好）
 OSS_ENDPOINT = os.getenv("OSS_ENDPOINT")
-OSS_ACCESS_KEY = os.getenv("OSS_ACCESS_KEY_ID")
-OSS_SECRET_KEY = os.getenv("OSS_ACCESS_KEY_SECRET")
+OSS_ACCESS_KEY = os.getenv("OSS_ACCESS_KEY")
+OSS_SECRET_KEY = os.getenv("OSS_SECRET_KEY")
 OSS_BUCKET_NAME = os.getenv("OSS_BUCKET_NAME")
 
 def upload_to_oss(file: UploadFile, file_name: str) -> str:
