@@ -30,7 +30,7 @@
     import uvicorn
     uvicorn.run(app, host="127.0.0.1",port=8000)
 
-## 网页对应前段文件
+## 网页对应前端文件
 1. 主页面
 ```bash
 src/pages/HomePage.vue
