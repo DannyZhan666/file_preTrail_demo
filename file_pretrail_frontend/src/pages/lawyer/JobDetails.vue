@@ -4,13 +4,13 @@
       <el-col :span="13">
         <!-- 修改PDF展示部分 -->
         <el-card>
-          <div class="pdf-header">
+          <div class="pdf-header" ref="pdfHeader">
             <h2 class="center-title">工单关联文件</h2>
-<!--                        <div>
-                          <el-button type="primary" icon="el-icon-download" @click="downloadFile" :disabled="!pdfUrl">
-                            下载文件
-                          </el-button>
-                        </div>-->
+            <!--                        <div>
+                                      <el-button type="primary" icon="el-icon-download" @click="downloadFile" :disabled="!pdfUrl">
+                                        下载文件
+                                      </el-button>
+                                    </div>-->
           </div>
 
           <!-- 如果 pdfUrl 不存在，显示加载提示 -->
@@ -19,7 +19,7 @@
             正在加载PDF文件...
           </div>
           <!-- 如果 pdfUrl 存在，就渲染 PDF -->
-          <embed v-else :src="pdfUrl" height="700px" width="950px"/>
+          <embed v-else :src="pdfUrl" height="670px" :width="pdfWidth + 'px'"/>
           <!--          <img src="https://file-pretrail.oss-cn-hangzhou.aliyuncs.com/%E5%B9%BF%E5%9C%BA.png">-->
 
         </el-card>
@@ -33,8 +33,13 @@
               <el-descriptions-item label="工单简介">{{ jobInfo.jobIntro }}</el-descriptions-item>
               <el-descriptions-item label="发布用户名">{{ jobInfo.clientName }}</el-descriptions-item>
               <el-descriptions-item label="客户预算">{{ jobInfo.clientBudget }} 元</el-descriptions-item>
-              <el-descriptions-item label="发布日期">{{dayjs(jobInfo.issueDate).format('YYYY年MM月DD日 HH:mm:ss') }}</el-descriptions-item>
-              <el-descriptions-item label="预期完成时间">{{dayjs(jobInfo.expectedTime).format('YYYY年MM月DD日 HH:mm:ss') }}</el-descriptions-item>
+              <el-descriptions-item label="发布日期">{{
+                  dayjs(jobInfo.issueDate).format('YYYY年MM月DD日 HH:mm:ss')
+                }}
+              </el-descriptions-item>
+              <el-descriptions-item label="预期完成时间">
+                {{ dayjs(jobInfo.expectedTime).format('YYYY年MM月DD日 HH:mm:ss') }}
+              </el-descriptions-item>
               <el-descriptions-item label="法律文件名">{{ jobInfo.fileName }}</el-descriptions-item>
             </el-descriptions>
           </el-collapse-item>
@@ -68,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed} from 'vue';
+import {ref, onMounted, computed, nextTick} from 'vue';
 import axios from 'axios';
 import {useRoute, useRouter} from 'vue-router';
 import {ElMessage} from 'element-plus';
@@ -87,6 +92,8 @@ const lawyerInfo = ref({
 const loading = ref(true);
 const error = ref(null);
 const pdfUrl = ref(null);
+const pdfWidth = ref(800); // 默认宽度
+const pdfHeader = ref(null);
 const size = ref('small');
 const activeNames = ref(['1', '2']); // 默认展开所有项
 
@@ -150,24 +157,15 @@ const fetchJobDetails = async () => {
   }
 };
 
-const downloadFile = () => {
-  // 实现文件下载逻辑
-};
+onMounted(async () => {
+  fetchJobDetails();
+  await nextTick(); // 确保 DOM 已渲染
+  if (pdfHeader.value) {
+    pdfWidth.value = pdfHeader.value.offsetWidth; // 动态获取 pdf-header 的宽度
+  }
+});
 
 const submitForm = async () => {
-  /*const postData = Object.assign({
-    jobId: route.params.id,
-    lawyerBudget: 0,
-    lawyerComment: '',
-    lawyerExpectedTime: '', // 新增字段
-    issueDate: '',
-  }, jobInfo.value, {
-    lawyerBudget: lawyerInfo.value.lawyerBudget || 0,
-    lawyerComment: lawyerInfo.value.lawyerComment || '',
-    lawyerExpectedTime: lawyerInfo.value.lawyerExpectedTime
-        ? dayjs(lawyerInfo.value.lawyerExpectedTime).format('YYYY-MM-DDTHH:mm:ss') // 格式化为 ISO 8601 格式
-        : ''
-  });*/
 
   const postData = {
     job_id: route.params.id,
@@ -193,19 +191,7 @@ const changePage = (path: any) => {
   router.push(path);
 };
 
-/*const filteredJobInfo = computed(() => {
-  const filtered:any = {};
-  for (const key in jobInfo.value) {
-    if (key !== 'path' && key !== 'fileContent') {
-      filtered[key] = jobInfo.value[key];
-    }
-  }
-  return filtered;
-});*/
 
-onMounted(() => {
-  fetchJobDetails();
-});
 </script>
 
 <style scoped>
@@ -213,6 +199,7 @@ onMounted(() => {
 .center-title {
   text-align: center;
 }
+
 .loading-text {
   text-align: center;
   font-size: 16px;

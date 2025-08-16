@@ -4,8 +4,8 @@
       <el-col :span="11">
         <!-- 修改PDF展示部分 -->
         <el-card>
-          <div class="pdf-header">
-            <h2>工单关联文件</h2>
+          <div class="pdf-header" ref="pdfHeader">
+            <h2 class="center-title">工单关联文件</h2>
             <!--            <div>-->
             <!--              <el-button type="primary" icon="el-icon-download" @click="downloadFile" :disabled="!pdfUrl">-->
             <!--                下载文件-->
@@ -19,7 +19,7 @@
             正在加载PDF文件...
           </div>
           <!-- 如果 pdfUrl 存在，就渲染 PDF -->
-          <embed v-else :src="pdfUrl" height="670px" width="800px"/>
+          <embed v-else :src="pdfUrl" height="670px" :width="pdfWidth + 'px'"/>
           <!--          <img src="https://file-pretrail.oss-cn-hangzhou.aliyuncs.com/%E5%B9%BF%E5%9C%BA.png">-->
 
         </el-card>
@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed} from 'vue';
+import {ref, onMounted, computed, nextTick} from 'vue';
 import axios from 'axios';
 import {useRoute, useRouter} from 'vue-router';
 import {ElMessage} from 'element-plus';
@@ -89,6 +89,8 @@ const jobInfo = ref({});
 const loading = ref(true);
 const error = ref(null);
 const pdfUrl = ref(null);
+const pdfWidth = ref(800); // 默认宽度
+const pdfHeader = ref(null);
 const size = ref('small');
 const activeNames = ref(['1', '2', '3']); // 默认展开第一个
 
@@ -153,9 +155,13 @@ const fetchJobDetails = async () => {
   }
 };
 
-const downloadFile = () => {
-  // 实现文件下载逻辑
-};
+onMounted(async () => {
+  fetchJobDetails();
+  await nextTick(); // 确保 DOM 已渲染
+  if (pdfHeader.value) {
+    pdfWidth.value = pdfHeader.value.offsetWidth; // 动态获取 pdf-header 的宽度
+  }
+});
 
 const submitForm = async () => {
   const postData = {
@@ -176,54 +182,11 @@ const changePage = (path: any) => {
   router.push(path);
 };
 
-/*const filteredJobInfo = computed(() => {
-  const filtered:any = {};
-  for (const key in jobInfo.value) {
-    if (key !== 'path' && key !== 'fileContent') {
-      filtered[key] = jobInfo.value[key];
-    }
-  }
-  return filtered;
-});*/
-
-onMounted(() => {
-  fetchJobDetails();
-});
 </script>
 
 <style scoped>
-.order-content {
-  display: flex;
-}
-
-.el-row {
-  margin-bottom: 20px;
-}
-
-.el-col {
-  padding: 10px;
-}
-
-.my-el-table {
-  width: 100%;
-  margin-top: 20px;
-}
-
-.clearfix::after {
-  content: "";
-  display: table;
-  clear: both;
-}
-
-.embed {
-  width: 100%;
-  height: auto;
-}
-
-.pdf-container {
-  width: 100%;
-  height: 600px; /* 固定高度 */
-  overflow-y: scroll; /* 垂直滚动 */
+.center-title {
+  text-align: center;
 }
 
 .loading-text {
