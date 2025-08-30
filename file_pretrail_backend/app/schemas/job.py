@@ -106,6 +106,10 @@ class JobDetailsVO(BaseModel):
     file_content: Optional[str] = None
     path: Optional[str] = None
     file_name: Optional[str] = None
+    paragraph: Optional[str] = None
+    paragraph_clean: Optional[str] = None
+    model_predict_details: Optional[str] = None
+    model_predict_labels: Optional[str] = None
 
     class Config:
         orm_mode = True  # 允许从 ORM 对象转换

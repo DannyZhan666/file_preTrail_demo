@@ -10,8 +10,6 @@ from app.models.user import User
 from app.schemas.item import Item
 from app.schemas.user import UserRegister, UserLogin
 from app.services.item_service import process_item
-from app.services.user_service import create_user
-from app.utils.security import encrypt_password
 
 router = APIRouter()
 router.include_router(user.router)

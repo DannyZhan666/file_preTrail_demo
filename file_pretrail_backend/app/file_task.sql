@@ -135,8 +135,10 @@ create table if not exists file_task.`file_seg_results`
 (
     `id`          bigint                             not null auto_increment comment '段落id' primary key,
     `fid`         bigint                             not null comment '文件id',
-    `segment`     mediumtext                         null comment '段落内容',
-    `prediction`  text                               null comment '预测结果',
+    paragraph             longtext                   null comment '原段落',
+    paragraph_clean       text                       null comment 'paragraph_clean',
+    model_predict_details longtext                   null comment 'model_predict_details',
+    model_predict_labels  longtext                   null comment 'model_predict_labels',
     `create_time` datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     `update_time` datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     `is_deleted`  tinyint  default 0                 not null comment '是否删除(0-未删, 1-已删)'

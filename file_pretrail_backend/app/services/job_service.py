@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.file import MyFile
 from app.models.job import Job
 from app.models.user import User
+from app.models.file_seg_results import FileSegResults
 from app.schemas.job import RawJobListForClientVO, JobDetailsForClientVO, NewJobListForClientVO, JobListForLawyerVO, \
     JobDetailsVO, NewJobListForLawyerVO, JobDetailsForAcceptVO, NewJobCreateRequest
 from app.schemas.order import OrderCreateRequest
@@ -194,6 +195,13 @@ def details(job_id: int, user_id: int, db: Session) -> Optional[JobDetailsVO]:
         job_details.file_content = base64.b64encode(my_file.content).decode('utf-8')
         job_details.path = my_file.path
         job_details.file_name = my_file.file_name
+
+        # 新增：查询 file_seg_results
+        seg_results = db.query(FileSegResults).filter(FileSegResults.fid == my_file.id).all()
+        job_details.paragraph = [seg.paragraph for seg in seg_results]
+        job_details.paragraph_clean = [seg.paragraph_clean for seg in seg_results]
+        job_details.model_predict_details = [seg.model_predict_details for seg in seg_results]
+        job_details.model_predict_labels = [seg.model_predict_labels for seg in seg_results]
 
     return job_details
 
