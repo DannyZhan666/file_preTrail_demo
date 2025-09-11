@@ -9,6 +9,8 @@ from datetime import datetime
 import shutil
 import uuid
 
+from sqlalchemy.testing import db
+
 from app.models.file import MyFile
 from app.models.file_seg_results import FileSegResults
 from app.utils.alioss_utils import upload_to_oss
@@ -64,6 +66,26 @@ async def upload_file_service(file: UploadFile, user_id: int, db: Session):
         is_deleted=0  # 文件未删除
     )
 
+    db.add(new_file)
+    db.commit()
+    db.refresh(new_file)
+
+    # 返回文件的ID
+    return new_file.id
+
+def file_analysis(file_id: int, db: Session):
+    """
+    分析上传的文件，提取文本并进行清理和预测。
+    """
+
+    # 获取文件信息
+    file = db.query(MyFile).filter(MyFile.id == file_id).first()
+    if not file:
+        return {"msg": "文件不存在", "status": "failure"}
+
+    file_path = file.path
+    file_content = file.content
+
     # check the file content
     try:
         doc = pymupdf.open(stream=file_content, filetype="pdf")
@@ -88,16 +110,12 @@ async def upload_file_service(file: UploadFile, user_id: int, db: Session):
         cur_pdf['model_predict_details'] = cur_pdf['paragraph_clean'].apply(lambda x: model.predict(x))
         cur_pdf['model_predict_labels'] = cur_pdf['model_predict_details'].apply(lambda x: get_pred_result(x))
 
-
-    db.add(new_file)
-    db.commit()
-    db.refresh(new_file)
-
     # 再保存段落信息
     for _, row in cur_pdf.iterrows():
         new_paragraph = FileSegResults(
-            fid=new_file.id,
+            fid=file_id,
             paragraph=row['paragraph'],
+            page_num=row['page_num'],
             paragraph_clean=row['paragraph_clean'],
             model_predict_details=str(row['model_predict_details']),
             model_predict_labels=str(row['model_predict_labels']),
@@ -108,6 +126,10 @@ async def upload_file_service(file: UploadFile, user_id: int, db: Session):
         db.add(new_paragraph)
     db.commit()
 
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        return {"msg": str(e), "status": "failure"}
 
-    # 返回文件的ID
-    return new_file.id
+    return {"msg": "文件分析并保存成功", "status": "success"}

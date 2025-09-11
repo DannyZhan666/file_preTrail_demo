@@ -6,6 +6,7 @@ from datetime import datetime
 class FileSegResultsBase(BaseModel):
     fid: int
     paragraph: Optional[str]
+    page_num: Optional[int]
     paragraph_clean: Optional[str]
     model_predict_details: Optional[Any]
     model_predict_labels: Optional[Any]

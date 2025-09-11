@@ -47,65 +47,79 @@ def get_special_condition_starting_page_index_new(file_name):
                 return np.nan
 
 
-def get_intact_paragraph(all_text):
-    ### 队列太好用了，先反过来，这样就等于从第一个开始检索
+def get_intact_paragraph(all_text, page_numbers):
     source_text = all_text.split('SPLIT_ANCHOR_RE')[::-1]
     source_text = [at for at in source_text if pd.notnull(at) and len(re.sub('[^a-zA-Z]+', '', at)) > 0]
-    ## 这是一个新的队列，一般第一个都可以直接加入新队列
-    new_text = [source_text.pop()]
-    '''
-    start_idx = 0
-    new_text = []
-    while start_idx<len(source_text)-1:
-        next_para_start_char = source_text[start_idx+1].strip()[0]
-        cur_sequence = [source_text[start_idx]]
-        while next_para_start_char.islower() and start_idx<len(source_text)-1:
-            cur_sequence.append(source_text[start_idx+1])
-            start_idx+=1
-            next_para_start_char[start_idx+1].strip()[0]
-        start_idx+=1
-        new_text.append(" ".join(cur_sequence))
-    '''
-    ### 必须预留最后一个位置
+
+    new_text = []  # 用于存储合并后的段落
+    current_page = page_numbers + 1  # 用于记录当前段落的页码
+
+    # 遍历拆分后的文本并合并
     while len(source_text) > 1:
-        ## 这是从老队列第二个元素开始检索
         cur_sentence = source_text.pop()
         cur_sentence_clean = re.sub('[^a-zA-Z]+', '', cur_sentence)
+
+        # 如果当前段落是以大写字母开头，说明它是新段落，直接加入
         if cur_sentence_clean[0].isupper():
-            ## 符合条件，旧队列的元素入栈新队列
-            new_text.append(cur_sentence)
+            # 查找所有的 [PAGE_*] 角标
+            page_tags = re.findall(r'\[PAGE_(\d+)\]', cur_sentence)
+            if page_tags:
+                new_text.append((cur_sentence, current_page))
+                current_page += len(page_tags)
+            else:
+                new_text.append((cur_sentence, current_page))
+
         else:
-            ## 不符合条件的话， 说明要跟新队列的最后一个元素做concatenate，
-            ## 所以新队列出栈，和此刻旧队列的concat，然后再入栈新队列
-            previous_para = new_text.pop()
-            new_text.append(previous_para + ' ' + cur_sentence)
+            # 否则合并与上一段落
+            previous_para, previous_page = new_text.pop()
+            new_text.append(((previous_para + ' ' + cur_sentence), previous_page))
+
+    # 处理文本合并后存储
     return new_text
 
 
 def get_all_text(filename, doc, start_page_index, end_page_est=10):
-    # end_page_index = start_page_index + end_page_est
-    end_page_index = doc.page_count
+    end_page_index = start_page_index + end_page_est
     all_text_ls = []
+    page_numbers = []  # 用来记录每个段落的页码
+    next_page = start_page_index  # 用来标记当前页
     for cur_pg_num in range(start_page_index, end_page_index):
-        all_text_ls.append(doc.load_page(cur_pg_num).get_text().replace("\n", " "))
+        try:
+            # 获取当前页文本并替换换行符
+            cur_paragraphs = doc.load_page(cur_pg_num).get_text().replace("\n", " ")
+            # 为当前页添加角标
+            cur_paragraphs = cur_paragraphs + f"[PAGE_{next_page}] "
+            all_text_ls.append(cur_paragraphs)
+            page_numbers.append(next_page)  # 记录页码
+            next_page += 1  # 增加页码
+        except:
+            pass
+    # print(len(all_text_ls))
+    # print(all_text_ls)
     all_text = " ".join(all_text_ls)
-    # re_patn="(?<![^\s>])([0-9]+)(\. |\) )" -- 0621 ,找不出 （32）这种有括号在前的
-    # re_patn="(?<![^\s>]\()([0-9]+)(\. |\) )" ## 基于上面的改进, 这里还是会检测出多余的比如 18.8. 会把8.检测出来
-    # re_patn="(?<![^\s\)])([0-9]+)(\. |\) )" ## 基于上面的改进,这里(34)类似的检测不出来
+    # print(all_text)
+    # 正则表达式匹配段落编号
     re_patn = "(?<![^\s>｜^\(])([0-9]+)(\. |\) )"  ## 基于上面的改进
     all_para_nums = re.findall(re_patn, all_text)
     all_para_nums = [''.join(list(i)) for i in all_para_nums]
     ### temporaty solution, sometimes will replace 18.3. by the 3. if 3. exists
+    # 解决偶尔替换编号问题
     all_para_nums_start_with_space = [" " + a for a in all_para_nums]
     all_para_nums_start_with_bracket = ["(" + b for b in all_para_nums]
+    # 用 SPLIT_ANCHOR_RE 替换段落编号
     for para_num in (all_para_nums_start_with_space + all_para_nums_start_with_bracket):
         all_text = all_text.replace(para_num, "SPLIT_ANCHOR_RE")
 
     ### combine all text :有时候段落中也会有一些类似段落符的字，
     ### 这时候需要把他们合并，比如clause need fourteen（14） days，这里这个（14）还是会被检索到，然后变成分隔符
 
-    all_text_combine = get_intact_paragraph(all_text)
-    cur_df = pd.DataFrame(all_text_combine, columns=['paragraph'])
+    # 调用 get_intact_paragraph 函数进行段落合并
+    all_text_combine = get_intact_paragraph(all_text, start_page_index)
+    print(all_text_combine)
+    try:
+        cur_df = pd.DataFrame(all_text_combine, columns=['paragraph', 'page_num'])
+    except Exception as e:
+        print("DataFrame构造失败：", e)
     # cur_df = pd.DataFrame(np.array(all_text.split('SPLIT_ANCHOR_RE')),columns = ['paragraph'])
     cur_df['file_name'] = filename
     return cur_df

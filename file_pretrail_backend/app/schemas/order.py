@@ -20,7 +20,30 @@ class MyOrder(BaseModel):
 
 class OrderCreateRequest(BaseModel):
     order_name: str
-    job_id: int
+    new_jid: int
+    origin_jid: int
 
     class Config:
         orm_mode = True  # 允许从 ORM 对象转换
+
+class OrderForLaywerVO(BaseModel):
+    id: Optional[int] = None
+    order_name: str
+    client_name: Optional[str] = None
+    create_time: datetime
+    client_due_date: Optional[datetime] = None
+    lawyer_due_date: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True  # 使 Pydantic 支持 SQLAlchemy ORM 模型转换
+
+class OrderForClientVO(BaseModel):
+    id: Optional[int] = None
+    order_name: str
+    lawyer_name: Optional[str] = None
+    create_time: datetime
+    client_due_date: Optional[datetime] = None
+    lawyer_due_date: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True  # 使 Pydantic 支持 SQLAlchemy ORM 模型转换

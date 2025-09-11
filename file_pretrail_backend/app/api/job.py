@@ -11,9 +11,10 @@ from app.models.file import MyFile
 from app.models.job import Job
 from app.models.user import User
 from app.schemas.job import JobCreateRequest, JobResponse, JobDetailsForClientVO, NewJobCreateRequest, AcceptJobRequest
+from app.services.file_service import file_analysis
 from app.services.job_service import list_raw_job_for_client, list_new_job_for_client, \
     list_raw_job_for_lawyer, details_for_client, details, list_new_job_for_lawyer, details_for_accept, new_job, \
-    accept_job
+    accept_job, delete_origin_job_for_client, delete_new_job_for_client
 from app.core.database import get_db
 from app.utils.result_utils import ResultUtils
 
@@ -94,6 +95,13 @@ async def create_job(
     # 校验工单名称和类型
     if not job_create_request.job_name or not job_create_request.job_type:
         raise HTTPException(status_code=400, detail="工单名称和类型不能为空")
+
+        # 调用文件分析函数
+    file_analysis_result = file_analysis(job_create_request.file_id, db)
+
+    # 如果文件分析失败，返回错误信息
+    if file_analysis_result['status'] == "failure":
+        raise HTTPException(status_code=400, detail=file_analysis_result['msg'])
 
     # 创建工单对象
     new_job = Job(
@@ -199,3 +207,29 @@ async def get_job_details_for_accept(id: int, db: Session = Depends(get_db),
         raise HTTPException(status_code=404, detail="工单未找到")
 
     return ResultUtils.success(job_details)
+
+@router.delete("/deleteOriginJobForClient")
+async def delete_origin_job_for_client_api(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    根据ID删除工单
+    """
+    user_id = current_user.id
+    if not user_id:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    # 调用 job_service 中的删除方法
+    result = delete_origin_job_for_client(id, user_id, db)
+    return ResultUtils.success(result)
+
+@router.delete("/deleteNewJobForClient")
+async def delete_new_job_for_client_api(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    根据ID删除工单
+    """
+    user_id = current_user.id
+    if not user_id:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    # 调用 job_service 中的删除方法
+    result = delete_new_job_for_client(id, user_id, db)
+    return ResultUtils.success(result)

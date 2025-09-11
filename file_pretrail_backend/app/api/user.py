@@ -2,15 +2,15 @@ import re
 from datetime import datetime
 from typing import Dict
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_password_hash, verify_password, create_access_token, get_current_user
 from app.core.database import SessionLocal, get_db
 from app.models.user import User
-from app.schemas.user import UserRegister, UserLogin, LawyerResponse
+from app.schemas.user import UserRegister, UserLogin, LawyerResponse, UpdateUserRequest
 from app.schemas.user import User as UserSchema  # 引入Pydantic用户模型
-from app.services.user_service import get_lawyers
+from app.services.user_service import get_lawyers, upload_avatar
 from app.utils.page_help import paginate
 from app.utils.result_utils import ResultUtils
 
@@ -114,3 +114,61 @@ def get_lawyer_list(page: int, pageSize: int, db: Session = Depends(get_db),
         "total": paginated_data["total"],
         "data": lawyer_list
     })
+
+
+@router.put("/update")
+async def update_user_info(update_data: UpdateUserRequest,db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    更新用户信息接口
+    """
+
+    # 获取用户
+    user = db.query(User).filter(User.id == current_user.id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="用户未找到")
+
+    # 更新用户信息
+    if update_data.username:
+        user.username = update_data.username
+    if update_data.gender is not None:
+        user.gender = update_data.gender
+    if update_data.avatarUrl:
+        user.avatar_url = update_data.avatarUrl
+    if update_data.phone:
+        user.phone = update_data.phone
+    if update_data.email:
+        user.email = update_data.email
+
+    # 提交数据库更新
+    db.commit()
+
+    # 刷新用户对象，确保获取最新的用户数据
+    db.refresh(user)
+
+    return {"code": 200, "msg": "用户信息更新成功", "data": user}
+
+
+@router.put("/avatar")
+async def upload_avatar_api(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    上传用户头像接口
+    """
+
+    # 获取用户
+    user = db.query(User).filter(User.id == current_user.id).first()
+
+    user_id = current_user.id
+    if not user_id:
+        raise HTTPException(status_code=401, detail="未登录")
+
+    try:
+        # 调用 user_service 中的 upload_avatar 方法处理头像上传
+        avatar_url = upload_avatar(file, user_id, db)
+
+        return {"code": 200, "msg": "头像上传成功", "data": {"avatarUrl": avatar_url}}
+
+    except HTTPException as e:
+        raise e  # 直接抛出 HTTPException 错误
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"服务器错误: {str(e)}")

@@ -53,3 +53,13 @@ class LawyerResponse(BaseModel):
 
     class Config:
         orm_mode = True  # 允许Pydantic从ORM对象中提取数据
+
+class UpdateUserRequest(BaseModel):
+    username: str
+    gender: Optional[int] = None  # 性别为可选字段，默认为 None
+    avatarUrl: Optional[str] = None  # 头像为可选字段，默认为 None
+    phone: str
+    email: str
+
+    class Config:
+        orm_mode = True  # 允许从 SQLAlchemy 模型转换到 Pydantic 模型

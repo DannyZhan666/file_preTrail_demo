@@ -2,14 +2,17 @@ import base64
 from datetime import datetime
 from typing import Optional
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.file import MyFile
 from app.models.job import Job
+from app.models.newjob import NewJob
 from app.models.user import User
 from app.models.file_seg_results import FileSegResults
-from app.schemas.job import RawJobListForClientVO, JobDetailsForClientVO, NewJobListForClientVO, JobListForLawyerVO, \
+from app.schemas.job import RawJobListForClientVO, JobDetailsForClientVO, JobListForLawyerVO, \
     JobDetailsVO, NewJobListForLawyerVO, JobDetailsForAcceptVO, NewJobCreateRequest
+from app.schemas.newJob import NewJobDetailsForClientVO, NewJobDetailsForAcceptVO, NewJobListForClientVO
 from app.schemas.order import OrderCreateRequest
 from app.services.order_service import create_order
 from app.utils.error_code import ErrorCode
@@ -19,7 +22,7 @@ from sqlalchemy import or_
 
 def list_raw_job_for_client(db: Session, page: int, page_size: int, client_id: int):
     # 查询 job_status = 0 和 client_id 匹配的记录
-    query = db.query(Job).filter(Job.job_status == 0, Job.client_id == client_id)
+    query = db.query(Job).filter(Job.job_status == 0, Job.client_id == client_id, Job.is_deleted == 0)
 
     # 分页
     total = query.count()
@@ -37,12 +40,12 @@ def list_raw_job_for_client(db: Session, page: int, page_size: int, client_id: i
         "data": job_list_for_client_vo
     }
 
-
 def convert_to_job_list_for_client_vo(job: Job) -> RawJobListForClientVO:
     job_type_map = {
         0: "未分类",
         1: "房地产",
         2: "婚姻",
+        3: "公司法"
     }
     job_type = job_type_map.get(job.job_type, "未知类型")
     return RawJobListForClientVO(
@@ -60,7 +63,7 @@ def list_new_job_for_client(page: int, page_size: int, user_id: int, db: Session
         raise ValueError("用户未找到")
 
     user_role = user.user_role
-    query = db.query(Job).filter(Job.job_status == 1)
+    query = db.query(NewJob).filter(NewJob.job_status == 1, NewJob.is_deleted == 0)  # 只获取状态为 1 的工单
 
     if user_role == 2:  # 用户是律师
         query = query.filter(Job.lawyer_id == user_id)
@@ -69,10 +72,10 @@ def list_new_job_for_client(page: int, page_size: int, user_id: int, db: Session
 
     # 分页查询
     total_jobs = query.count()
-    jobs = query.offset((page - 1) * page_size).limit(page_size).all()
+    newjobs = query.offset((page - 1) * page_size).limit(page_size).all()
 
     # 转换 Job 为 NewJobListForClientVO
-    job_list_for_client = [convert_to_new_job_list_for_client_vo(job, db) for job in jobs]
+    job_list_for_client = [convert_to_new_job_list_for_client_vo(job, db) for job in newjobs]
 
 
     return job_list_for_client
@@ -99,17 +102,25 @@ def convert_to_new_job_list_for_client_vo(job: Job, db: Session) -> NewJobListFo
     return new_job_vo
 
 def list_raw_job_for_lawyer(page: int, page_size: int, lawyer_id: int, db: Session) -> list[JobListForLawyerVO]:
-    # 获取 status = 0 的工单（没有分配律师）
-    job_list_no_status = db.query(Job).filter(Job.job_status == 0).all()
 
-    # 获取 status = 1 的工单，并且检查是否律师已经参与
-    job_list_yes_status = db.query(Job).filter(Job.job_status == 1, Job.lawyer_id == lawyer_id).all()
+    # 1. 获取所有未分配律师的工单
+    job_list_no_status = db.query(Job).filter(Job.job_status == 0, Job.is_deleted == 0).all()
 
-    # 获取所有 job_name（状态为1的工单的 job_name）
-    job_name_yes_status = {job.job_name for job in job_list_yes_status}
+    # # 获取 status = 1 的工单，并且检查是否律师已经参与
+    # job_list_yes_status = db.query(Job).filter(Job.job_status == 1, Job.lawyer_id == lawyer_id).all()
+    #
+    # # 获取所有 job_name（状态为1的工单的 job_name）
+    # job_name_yes_status = {job.job_name for job in job_list_yes_status}
+    #
+    # # 筛选出 job_status = 0 的工单，且其 job_name 不在 job_name_yes_status 中
+    # remaining_jobs = [job for job in job_list_no_status if job.job_name not in job_name_yes_status]
 
-    # 筛选出 job_status = 0 的工单，且其 job_name 不在 job_name_yes_status 中
-    remaining_jobs = [job for job in job_list_no_status if job.job_name not in job_name_yes_status]
+    # 2. 获取该律师已接单的原始工单id集合
+    new_jobs = db.query(NewJob).filter(NewJob.lawyer_id == lawyer_id, NewJob.is_deleted == 0).all()
+    taken_job_ids = {nj.job_id for nj in new_jobs}
+
+    # 3. 过滤掉已被该律师接单的工单
+    remaining_jobs = [job for job in job_list_no_status if job.id not in taken_job_ids]
 
     # 分页处理
     start = (page - 1) * page_size
@@ -140,7 +151,7 @@ def convert_to_job_list_for_lawyer_vo(job: Job, db: Session) -> JobListForLawyer
 
 def list_new_job_for_lawyer(page: int, page_size: int, lawyer_id: int, db: Session) -> list[NewJobListForLawyerVO]:
     # 获取 status = 2 且 lawyer_id = userId 的工单
-    new_job_list = db.query(Job).filter(Job.job_status == 2, Job.lawyer_id == lawyer_id).all()
+    new_job_list = db.query(NewJob).filter(NewJob.job_status == 2, Job.lawyer_id == lawyer_id, NewJob.is_deleted == 0).all()
 
     # 批量转换 Job -> NewJobListForLawyerVO
     job_list_for_lawyer = [convert_to_new_job_list_for_lawyer_vo(job, db) for job in new_job_list]
@@ -199,6 +210,7 @@ def details(job_id: int, user_id: int, db: Session) -> Optional[JobDetailsVO]:
         # 新增：查询 file_seg_results
         seg_results = db.query(FileSegResults).filter(FileSegResults.fid == my_file.id).all()
         job_details.paragraph = [seg.paragraph for seg in seg_results]
+        job_details.page_num = [seg.page_num for seg in seg_results]
         job_details.paragraph_clean = [seg.paragraph_clean for seg in seg_results]
         job_details.model_predict_details = [seg.model_predict_details for seg in seg_results]
         job_details.model_predict_labels = [seg.model_predict_labels for seg in seg_results]
@@ -207,12 +219,12 @@ def details(job_id: int, user_id: int, db: Session) -> Optional[JobDetailsVO]:
 
 def details_for_client(id: int, db: Session, current_user_id: int) -> JobDetailsForClientVO:
     # 查询工单
-    my_job: Optional[Job] = db.query(Job).filter(Job.id == id).first()
+    my_job: Optional[NewJob] = db.query(NewJob).filter(NewJob.id == id).first()
     if not my_job:
         raise ValueError("工单未找到")
 
     # 获取工单的详细信息
-    job_details = JobDetailsForClientVO(
+    job_details = NewJobDetailsForClientVO(
         job_id=my_job.id,
         job_name=my_job.job_name,
         job_type=my_job.job_type,
@@ -245,16 +257,24 @@ def details_for_client(id: int, db: Session, current_user_id: int) -> JobDetails
         job_details.path = my_file.path
         job_details.file_name = my_file.file_name
 
+        # 新增：查询 file_seg_results
+        seg_results = db.query(FileSegResults).filter(FileSegResults.fid == my_file.id).all()
+        job_details.paragraph = [seg.paragraph for seg in seg_results]
+        job_details.page_num = [seg.page_num for seg in seg_results]
+        job_details.paragraph_clean = [seg.paragraph_clean for seg in seg_results]
+        job_details.model_predict_details = [seg.model_predict_details for seg in seg_results]
+        job_details.model_predict_labels = [seg.model_predict_labels for seg in seg_results]
+
     return job_details
 
 def details_for_accept(job_id: int, user_id: int, db: Session) -> Optional[JobDetailsForAcceptVO]:
     # 获取工单信息
-    my_job: Optional[Job] = db.query(Job).filter(Job.id == job_id).first()
+    my_job: Optional[NewJob] = db.query(NewJob).filter(NewJob.id == job_id).first()
     if not my_job:
         return None
 
     # 创建 JobDetailsForAcceptVO 对象并填充字段
-    job_details = JobDetailsForAcceptVO(
+    job_details = NewJobDetailsForAcceptVO(
         job_id=my_job.id,
         job_name=my_job.job_name,
         job_type=my_job.job_type,
@@ -279,6 +299,14 @@ def details_for_accept(job_id: int, user_id: int, db: Session) -> Optional[JobDe
         job_details.path = my_file.path
         job_details.file_name = my_file.file_name
 
+        # 新增：查询 file_seg_results
+        seg_results = db.query(FileSegResults).filter(FileSegResults.fid == my_file.id).all()
+        job_details.paragraph = [seg.paragraph for seg in seg_results]
+        job_details.page_num = [seg.page_num for seg in seg_results]
+        job_details.paragraph_clean = [seg.paragraph_clean for seg in seg_results]
+        job_details.model_predict_details = [seg.model_predict_details for seg in seg_results]
+        job_details.model_predict_labels = [seg.model_predict_labels for seg in seg_results]
+
     return job_details
 
 def new_job(new_job_create_request: NewJobCreateRequest, user_id: int, db: Session) -> int:
@@ -288,8 +316,9 @@ def new_job(new_job_create_request: NewJobCreateRequest, user_id: int, db: Sessi
         return 0  # 工单不存在
 
     # 创建新的工单对象
-    new_job = Job(
+    new_job = NewJob(
         job_name=origin_job.job_name,
+        job_id=origin_job.id,
         job_type=origin_job.job_type,
         job_intro=origin_job.job_intro,
         file_id=origin_job.file_id,
@@ -314,17 +343,35 @@ def new_job(new_job_create_request: NewJobCreateRequest, user_id: int, db: Sessi
 
 def accept_job(job_id: int, user_id: int, db: Session) -> int:
     # 获取工单信息
-    my_job = db.query(Job).filter(Job.id == job_id).first()
+    my_job = db.query(NewJob).filter(NewJob.id == job_id).first()
     if not my_job:
         return 0  # 工单不存在
 
+    # 获取原始工单信息
+    origin_job_id = my_job.job_id  # 取第一个的job_id
+
+    # 查出所有与原始工单id关联的NewJob
+    all_my_jobs = db.query(NewJob).filter(NewJob.job_id == origin_job_id).all()
+    if not all_my_jobs:
+        return 0
+
+    job = db.query(Job).filter(Job.id == origin_job_id).first()
+    # 先将原始工单的 job_status 更新为 -1
+    if job:
+        job.job_status = -1
+        db.commit()
+
     # 更新工单状态为已接收（状态 2）
-    my_job.job_status = 2
+    # 批量更新 job_status
+    for nj in all_my_jobs:
+        nj.job_status = 2
+    db.commit()
 
     # 创建订单请求
     order_create_request = OrderCreateRequest(
         order_name=my_job.job_name,
-        job_id=job_id
+        new_jid=my_job.id,
+        origin_jid=my_job.job_id,
     )
 
     # 调用订单服务创建订单
@@ -334,3 +381,36 @@ def accept_job(job_id: int, user_id: int, db: Session) -> int:
     db.commit()
 
     return 1  # 返回成功标识
+
+
+def delete_origin_job_for_client(id: int, user_id: int, db: Session):
+    # 检查 newjob 数据库中是否存在相同 job_id 的工单
+    existing_new_job = db.query(NewJob).filter(NewJob.job_id == id).first()
+    if existing_new_job:
+        raise HTTPException(status_code=400, detail="已有律师接单，不可删除")
+
+    # 查询工单并进行删除
+    job = db.query(Job).filter(Job.id == id, Job.client_id == user_id, Job.is_deleted == 0).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="工单不存在")
+
+    # 执行逻辑删除
+    job.is_deleted = 1  # 设置为已删除
+    job.update_time = datetime.now()
+    db.commit()
+
+    return {"msg": "删除成功"}
+
+def delete_new_job_for_client(id: int, user_id: int, db: Session):
+
+    # 查询工单并进行删除
+    job = db.query(NewJob).filter(NewJob.id == id, Job.client_id == user_id, Job.is_deleted == 0).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="工单不存在")
+
+    # 执行逻辑删除
+    job.is_deleted = 1  # 设置为已删除
+    job.update_time = datetime.now()
+    db.commit()
+
+    return {"msg": "删除成功"}

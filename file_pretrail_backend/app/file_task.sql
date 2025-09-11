@@ -72,6 +72,7 @@ DROP TABLE IF EXISTS file_task.`newJob`;
 create table if not exists file_task.`newJob`
 (
     `id`             bigint                             not null auto_increment comment '工单id' primary key,
+    `job_id`         bigint                             null comment '原工单id',
     `job_name`       varchar(256)                       not null comment '工单名',
     `job_type`       int                                not null comment '工单种类',
     `job_intro`      varchar(1024) comment '工单简介',
@@ -79,6 +80,10 @@ create table if not exists file_task.`newJob`
     `client_id`      bigint                             not null comment '客户id',
     `client_budget`  bigint                             null comment '客户预算',
     `due`            datetime                           null comment '逾期时间',
+    `lawyer_id`      bigint                             null comment '律师id',
+    `lawyer_budget`  bigint                             null comment '律师预算',
+    `lawyer_comment` varchar(2048)                      null comment '律师批注',
+    `due_law`        datetime                           null comment '律师的预期时间',
     `job_status`     tinyint  default 0                 not null comment '工单状态 0-未被接 1-已改动 2-已完成',
     `create_time`    datetime                           not null comment '创建时间',
     `update_time`    datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
@@ -109,7 +114,8 @@ create table if not exists file_task.`orders`
     `order_name`  varchar(256)                       not null comment '订单名',
     `client_id`   bigint                             not null comment '客户id',
     `lawyer_id`   bigint                             not null comment '律师id',
-    `jid`         bigint                             not null comment '工单id',
+    `new_jid`     bigint                             not null comment '新工单id',
+    `origin_jid`  bigint                             not null comment '原工单id',
     `create_time` datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     `update_time` datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     `is_deleted`  tinyint  default 0                 not null comment '是否删除(0-未删, 1-已删)'
@@ -136,6 +142,7 @@ create table if not exists file_task.`file_seg_results`
     `id`          bigint                             not null auto_increment comment '段落id' primary key,
     `fid`         bigint                             not null comment '文件id',
     paragraph             longtext                   null comment '原段落',
+    page_num              int                        null comment 'page_num',
     paragraph_clean       text                       null comment 'paragraph_clean',
     model_predict_details longtext                   null comment 'model_predict_details',
     model_predict_labels  longtext                   null comment 'model_predict_labels',

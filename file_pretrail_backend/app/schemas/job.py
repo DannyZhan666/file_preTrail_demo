@@ -12,21 +12,6 @@ class RawJobListForClientVO(BaseModel):
     class Config:
         orm_mode = True
 
-class NewJobListForClientVO(BaseModel):
-    job_id: int
-    job_name: str
-    job_type: int
-    client_budget: int
-    due: Optional[datetime]
-    lawyer_name: Optional[str] = None
-    lawyer_budget: Optional[int] = None
-    due_law: Optional[datetime] = None
-    issue_date: datetime
-    update_date: Optional[datetime] = None
-
-    class Config:
-        orm_mode = True  # 允许从 ORM 对象转换
-
 class JobListForLawyerVO(BaseModel):
     job_id: int
     job_name: str
@@ -106,6 +91,7 @@ class JobDetailsVO(BaseModel):
     file_content: Optional[str] = None
     path: Optional[str] = None
     file_name: Optional[str] = None
+    page_num: Optional[int] = None
     paragraph: Optional[str] = None
     paragraph_clean: Optional[str] = None
     model_predict_details: Optional[str] = None
@@ -133,6 +119,11 @@ class JobDetailsForClientVO(BaseModel):
     lawyer_comment: Optional[str]
     update_time: datetime
     due_law: Optional[datetime]
+    page_num: Optional[int] = None
+    paragraph: Optional[str] = None
+    paragraph_clean: Optional[str] = None
+    model_predict_details: Optional[str] = None
+    model_predict_labels: Optional[str] = None
 
     class Config:
         orm_mode = True  # 允许从 ORM 对象转换
@@ -152,6 +143,11 @@ class JobDetailsForAcceptVO(BaseModel):
     file_content: Optional[str] = None
     path: Optional[str] = None
     file_name: Optional[str] = None
+    page_num: Optional[int] = None
+    paragraph: Optional[str] = None
+    paragraph_clean: Optional[str] = None
+    model_predict_details: Optional[str] = None
+    model_predict_labels: Optional[str] = None
 
     class Config:
         orm_mode = True  # 允许从 ORM 对象转换
