@@ -14,47 +14,47 @@
     >
       <a-form-item
         label="账号"
-        name="userAccount"
+        name="user_account"
         :rules="[{ required: true, message: '请输入账号' }]"
       >
         <a-input
-          v-model:value="formState.userAccount"
+          v-model:value="formState.user_account"
           placeholder="请输入账号"
         />
       </a-form-item>
       <a-form-item
         label="密码"
-        name="userPassword"
+        name="user_password"
         :rules="[
           { required: true, message: '请输入密码' },
           { min: 8, message: '密码不能小于 8 位' },
         ]"
       >
         <a-input-password
-          v-model:value="formState.userPassword"
+          v-model:value="formState.user_password"
           placeholder="请输入密码"
         />
       </a-form-item>
       <a-form-item
         label="确认密码"
-        name="checkPassword"
+        name="check_password"
         :rules="[
           { required: true, message: '请输入确认密码' },
           { min: 8, message: '确认密码不能小于 8 位' },
         ]"
       >
         <a-input-password
-          v-model:value="formState.checkPassword"
+          v-model:value="formState.check_password"
           placeholder="请输入确认密码"
         />
       </a-form-item>
       <a-form-item
           label="角色"
-          name="userRole"
+          name="user_role"
           :rules="[{ required: true, message: '请选择角色' }]"
       >
         <a-select
-            v-model:value="formState.userRole"
+            v-model:value="formState.user_role"
             placeholder="请选择角色"
         >
           <a-select-option value="1">一般客户</a-select-option>
@@ -75,17 +75,17 @@ import { message } from "ant-design-vue";
 import { useRouter } from "vue-router";
 
 interface FormState {
-  userAccount: string;
-  userPassword: string;
-  checkPassword: string;
-  userRole: string;
+  user_account: string;
+  user_password: string;
+  check_password: string;
+  user_role: string;
 }
 
 const formState = reactive<FormState>({
-  userAccount: "",
-  userPassword: "",
-  checkPassword: "",
-  userRole: "",
+  user_account: "",
+  user_password: "",
+  check_password: "",
+  user_role: "",
 });
 
 const router = useRouter();
@@ -96,7 +96,7 @@ const router = useRouter();
  */
 const handleSubmit = async (values: any) => {
   // 判断两次输入的密码是否一致
-  if (formState.userPassword !== formState.checkPassword) {
+  if (formState.user_password !== formState.check_password) {
     message.error("二次输入的密码不一致");
     return;
   }

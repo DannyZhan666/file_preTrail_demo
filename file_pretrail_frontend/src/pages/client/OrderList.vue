@@ -13,18 +13,13 @@
         <el-table-column label="序号" type="index" width="150" align="center" />
         <el-table-column prop="id" label="订单id" align="center" />
         <el-table-column prop="order_name" label="订单名" align="center" />
-        <el-table-column prop="lawyer_id" label="律师id" align="center" />
-        <el-table-column prop="client_id" label="客户id" align="center" />
-        <el-table-column prop="jid" label="工单id" align="center" />
-        <el-table-column prop="create_time" label="创建时间" align="center" />
+        <el-table-column prop="lawyer_name" label="律师名" align="center" />
+        <el-table-column prop="clientDueDate" label="我的预期时间" align="center" />
+        <el-table-column prop="lawyerDueDate" label="律师预期时间" align="center" />
+        <el-table-column prop="createTime" label="订单创建时间" align="center" />
         <el-table-column label="操作" align="center">
           <template #default="scope">
-            <el-button type="primary" @click="viewDetails(scope.row.id)">详情</el-button>
-            <el-popconfirm title="确定删除吗？" @confirm="deleteOrder(scope.row.id)">
-              <template #reference>
-                <el-button type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <el-button link type="primary" size="large" @click="viewDetails(scope.row.id)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -57,11 +52,13 @@ const pageSize = ref(10); // 每页条数，初始为10
 
 const fetchOrders = async () => {
   try {
-    const response = await myAxios.get(`/order/list?page=${page.value}&pageSize=${pageSize.value}`);
+    const response = await myAxios.get(`/order/listForClient?page=${page.value}&pageSize=${pageSize.value}`);
     if (response.data && response.data.code === 200) {
       // Format the createTime field
       orderList.value = response.data.data.data.map(order => ({
         ...order,
+        clientDueDate: dayjs(order.client_due_date).format('YYYY-MM-DD'), // 格式化时间
+        lawyerDueDate: dayjs(order.lawyer_due_date).format('YYYY-MM-DD'), // 格式化时间
         createTime: dayjs(order.createTime).format('YYYY-MM-DD HH:mm:ss'), // Format time
       }));
     } else {
@@ -75,13 +72,13 @@ const fetchOrders = async () => {
 
 const handleNextPage = () => {
   page.value += 1; // 下一页
-  fetchWorkOrders();
+  fetchOrders();
 };
 
 const handlePreviousPage = () => {
   if (page.value > 1) {
     page.value -= 1; // 上一页
-    fetchWorkOrders();
+    fetchOrders();
   }
 };
 

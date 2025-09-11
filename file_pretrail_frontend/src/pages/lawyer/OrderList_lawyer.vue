@@ -10,12 +10,11 @@
     <el-card class="narrow-card">
       <el-table :data="orderList" class="my-el-table">
         <el-table-column label="序号" type="index" width="150" align="center" />
-        <el-table-column prop="id" label="订单id" align="center" />
         <el-table-column prop="orderName" label="订单名" align="center" />
-        <el-table-column prop="lawyerId" label="律师id" align="center" />
-        <el-table-column prop="clientId" label="客户id" align="center" />
-        <el-table-column prop="jid" label="工单id" align="center" />
-        <el-table-column prop="createTime" label="创建时间" align="center" />
+        <el-table-column prop="clientName" label="客户名" align="center" />
+        <el-table-column prop="clientDueDate" label="客户要求时间" align="center" />
+        <el-table-column prop="lawyerDueDate" label="我的预期时间" align="center" />
+        <el-table-column prop="createTime" label="订单创建时间" align="center" />
         <el-table-column label="操作" align="center">
           <template #default="scope">
             <el-popconfirm title="确定删除吗？" @confirm="deleteOrder(scope.row.id)">
@@ -52,7 +51,7 @@ const pageSize = ref(10); // 每页条数，初始为10
 
 const fetchOrders = async () => {
   try {
-    const response = await myAxios.get(`/order/list?page=${page.value}&pageSize=${pageSize.value}`);
+    const response = await myAxios.get(`/order/listForLawyer?page=${page.value}&pageSize=${pageSize.value}`);
     if (response.data && response.data.code === 200) {
       // Format the createTime field
       const responseData = response.data.data;
@@ -60,9 +59,9 @@ const fetchOrders = async () => {
       orderList.value = responseData.data.map(order => ({
         id: order.id,
         orderName: order.order_name,
-        lawyerId: order.lawyer_id,
-        clientId: order.client_id,
-        jid: order.jid,
+        clientName: order.client_name,
+        clientDueDate: dayjs(order.client_due_date).format('YYYY-MM-DD'), // 格式化时间
+        lawyerDueDate: dayjs(order.lawyer_due_date).format('YYYY-MM-DD'), // 格式化时间
         createTime: dayjs(order.create_time).format('YYYY-MM-DD HH:mm:ss'), // 格式化时间
       }));
     } else {
@@ -76,13 +75,13 @@ const fetchOrders = async () => {
 
 const handleNextPage = () => {
   page.value += 1; // 下一页
-  fetchWorkOrders();
+  fetchOrders();
 };
 
 const handlePreviousPage = () => {
   if (page.value > 1) {
     page.value -= 1; // 上一页
-    fetchWorkOrders();
+    fetchOrders();
   }
 };
 

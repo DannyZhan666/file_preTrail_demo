@@ -10,19 +10,28 @@
       <el-table :data="workOrderList" style="width: 100%">
         <el-table-column type="index" label="序列" width="100" align="center"/>
         <el-table-column prop="lawyerName" label="接单律师" width="auto" align="center"/>
-        <el-table-column prop="lawyerBudget" label="律师预算" width="auto" align="center"/>
+<!--        <el-table-column prop="lawyerBudget" label="律师预算" width="auto" align="center"/>-->
         <el-table-column prop="lawyerDue" label="律师预期日期" width="auto" align="center"/>
         <el-table-column prop="jobName" label="工单名" width="auto" align="center"/>
         <el-table-column prop="jobTypeName" label="工单种类" width="auto" align="center"/>
         <el-table-column prop="clientBudget" label="我的预算" width="auto" align="center"/>
         <el-table-column prop="clientDue" label="我的预期日期" width="auto" align="center"/>
         <el-table-column prop="issueDate" label="发布时间" width="auto" align="center"/>
-        <el-table-column fixed="right" label="Operations" min-width="auto" align="center">
+        <el-table-column fixed="right" label="操作" min-width="auto" align="center">
           <template v-slot="scope">
             <el-button link type="primary" size="small" @click="handleDetail(scope.row.jobId)">
               详情
             </el-button>
-            <el-button link type="danger" size="small">删除</el-button>
+            <el-popconfirm
+                title="确认删除此工单吗？"
+                confirm-button-text="确认"
+                cancel-button-text="取消"
+                @confirm="() => deleteWorkOrder(scope.row.jobId)"
+            >
+              <template #reference>
+                <el-button link type="danger" size="small">删除</el-button>
+              </template>
+            </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
@@ -150,9 +159,9 @@ const submitWorkOrder = async () => {
   }
 };
 
-const deleteWorkOrder = async (id) => {
+const deleteWorkOrder = async (jobId) => {
   try {
-    const response = await axios.delete(`/job/delete/${id}`);
+    const response = await myAxios.delete(`/job/deleteNewJobForClient/?id=${jobId}`);
     if (response.data && response.data.code === 200) {
       await fetchWorkOrders();
     } else {

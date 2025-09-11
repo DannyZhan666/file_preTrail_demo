@@ -73,6 +73,7 @@ import {onMounted, ref} from 'vue';
 import {ElMessage} from 'element-plus';
 import axios from "axios";
 import {useRouter} from "vue-router";
+import myAxios from "@/request";
 
 const router = useRouter();
 
@@ -87,7 +88,7 @@ const fetchJobDetails = async () => {
     const id = route.params.id;
     if (!id) throw new Error('无效的工单ID');
 
-    const response = await axios.get(`/job/detailsForClient?id=${id}`);
+    const response = await myAxios.get(`/job/detailsForClient?id=${id}`);
     jobInfo.value = response.data.data;
 
     const blob = base64ToBlob(response.data.data.fileContent);

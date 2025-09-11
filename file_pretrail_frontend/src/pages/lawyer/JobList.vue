@@ -8,30 +8,15 @@
     </el-card>
     <el-card class="main-card">
       <el-table :data="workOrderList" class="my-el-table">
-        <el-table-column label="序号" type="index" width="150">
-        </el-table-column>
-
-        <el-table-column prop="jobId" label="工单id">
-        </el-table-column>
-
-        <el-table-column prop="jobName" label="工单名">
-        </el-table-column>
-
-        <el-table-column prop="clientName" label="客户账号">
-        </el-table-column>
-
-        <el-table-column prop="jobTypeName" label="工单种类">
-        </el-table-column>
-
-        <el-table-column prop="createTime" label="创建时间">
-        </el-table-column>
-
+        <el-table-column label="序号" type="index" width="150"></el-table-column>
+        <el-table-column prop="jobId" label="工单id"></el-table-column>
+        <el-table-column prop="jobName" label="工单名"></el-table-column>
+        <el-table-column prop="clientName" label="客户账号"></el-table-column>
+        <el-table-column prop="jobTypeName" label="工单种类"></el-table-column>
+        <el-table-column prop="createTime" label="创建时间"></el-table-column>
         <el-table-column label="操作" align="center">
           <template v-slot="scope">
-            <el-button type="success" @click="handleDetail(scope.row.jobId)">详情</el-button>
-            <el-popconfirm title="确定删除吗？" @confirm="deleteWorkOrder(scope.row.jobId)">
-              <el-button type="danger" slot="reference">删除</el-button>
-            </el-popconfirm>
+            <el-button link type="success" size="large" @click="handleDetail(scope.row.jobId)">查看详情</el-button>
           </template>
         </el-table-column>
       </el-table>

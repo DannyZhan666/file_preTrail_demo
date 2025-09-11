@@ -101,8 +101,9 @@ const handleDetail = (jobId) => {
 
 
 const deleteWorkOrder = async (jobId) => {
+  console.log("Deleting job with ID:", jobId);  // 检查 jobId 是否正确
   try {
-    const response = await axios.delete(`/job/delete/?id=${jobId}`);
+    const response = await myAxios.delete(`/job/deleteOriginJobForClient/?id=${jobId}`);
     if (response.data && response.data.code === 200) {
       ElMessage.success('删除成功');
       await fetchWorkOrders();

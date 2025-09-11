@@ -6,11 +6,6 @@
         <el-card>
           <div class="pdf-header" ref="pdfHeader">
             <h2 class="center-title">工单关联文件</h2>
-            <!--            <div>-->
-            <!--              <el-button type="primary" icon="el-icon-download" @click="downloadFile" :disabled="!pdfUrl">-->
-            <!--                下载文件-->
-            <!--              </el-button>-->
-            <!--            </div>-->
           </div>
 
           <!-- 如果 pdfUrl 不存在，显示加载提示 -->
@@ -18,10 +13,25 @@
             <i class="el-icon-loading"></i>
             正在加载PDF文件...
           </div>
-          <!-- 如果 pdfUrl 存在，就渲染 PDF -->
-          <embed v-else :src="pdfUrl" height="670px" :width="pdfWidth + 'px'"/>
-          <!--          <img src="https://file-pretrail.oss-cn-hangzhou.aliyuncs.com/%E5%B9%BF%E5%9C%BA.png">-->
-
+<!--          &lt;!&ndash; 如果 pdfUrl 存在，就渲染 PDF &ndash;&gt;-->
+<!--          <PdfViewer ref="pdfViewerRef" :src="pdfUrl" />-->
+<!--          &lt;!&ndash;          <img src="https://file-pretrail.oss-cn-hangzhou.aliyuncs.com/%E5%B9%BF%E5%9C%BA.png">&ndash;&gt;-->
+          <!-- 用于显示 PDF 页面 -->
+          <div v-else class="pdf-container">
+            <!-- 设置 canvas 父容器的样式，使其居中 -->
+            <canvas ref="pdfCanvasRef" :style="{ width: '70%', height: '970px' }"></canvas>
+          </div>
+          <!-- 分页控件 -->
+          <div class="pagination-container">
+            <el-pagination
+                v-if="totalPages > 1"
+                :current-page="currentPage"
+                :page-size="1"
+                :total="totalPages"
+                layout="prev, pager, next"
+                @current-change="handlePdfPageChange"
+            />
+          </div>
         </el-card>
       </el-col>
       <el-col :span="12">
@@ -43,16 +53,16 @@
             <el-table :data="paginatedData" border style="width: 100%">
               <el-table-column prop="paragraph" label="段落">
                 <template #default="scope">
-          <span
-              class="clickable-text"
-              @click="locatePdfPage(scope.row.paragraph)"
-          >
-            {{
-              scope.row.paragraph.length > 20 && !scope.row.expanded
-                  ? scope.row.paragraph.slice(0, 20) + '...'
-                  : scope.row.paragraph
-            }}
-          </span>
+    <span
+        class="clickable-text"
+        @click="locatePdfPage(scope.row.pageNum)"
+    >
+                  {{
+        scope.row.paragraph.length > 20 && !scope.row.expanded
+            ? scope.row.paragraph.slice(0, 20) + '...'
+            : scope.row.paragraph
+      }}
+                  </span>
                   <el-button
                       v-if="scope.row.paragraph.length > 20"
                       type="text"
@@ -120,8 +130,8 @@
               </el-table-column>
             </el-table>
             <el-pagination
-                @current-change="handlePageChange"
-                :current-page="currentPage"
+                @current-change="handleTablePageChange"
+                :current-page="tableCurrentPage"
                 :page-size="5"
                 layout="prev, pager, next"
                 :total="tableData.length"
@@ -147,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed, nextTick} from 'vue';
+import {ref, onMounted, computed, nextTick, watch} from 'vue';
 import axios from 'axios';
 import {useRoute, useRouter} from 'vue-router';
 import {ElMessage} from 'element-plus';
@@ -155,16 +165,16 @@ import PdfViewer from 'pdf-viewer-vue3';
 import dayjs from 'dayjs';
 import myAxios from "@/request";
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 
 // 设置 PDF.js 的 Worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+pdfjsLib.GlobalWorkerOptions.workerSrc = require('pdfjs-dist/build/pdf.worker.entry');
 
 
 const jobInfo = ref({});
 const loading = ref(true);
 const error = ref(null);
 const pdfUrl = ref(null);
+const pdfCanvasRef = ref(null); // 用于渲染 PDF 页面
 const pdfWidth = ref(800); // 默认宽度
 const pdfHeader = ref(null);
 const size = ref('small');
@@ -187,117 +197,9 @@ const route = useRoute();
 const router = useRouter();
 
 const currentPage = ref(1); // 当前页码
+const tableCurrentPage = ref(1);  // 初始化表格当前页为 1
+const totalPages = ref(0); // PDF 总页数
 const pageSize = 5; // 每页显示的行数
-
-// 计算当前页的数据
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  const end = start + pageSize;
-  return tableData.value.slice(start, end);
-});
-
-// 切换展开状态
-const toggleExpand = (row: any, field: string) => {
-  row[field] = !row[field];
-};
-
-// 处理页码变化
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
-};
-
-// 模糊匹配函数
-const isFuzzyMatch = (text1: string, text2: string, threshold = 0.2) => {
-  const levenshtein = (a: string, b: string): number => {
-    const matrix = Array.from({length: a.length + 1}, (_, i) => Array(b.length + 1).fill(0));
-    for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
-    for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
-    for (let i = 1; i <= a.length; i++) {
-      for (let j = 1; j <= b.length; j++) {
-        matrix[i][j] = Math.min(
-            matrix[i - 1][j] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
-        );
-      }
-    }
-    return matrix[a.length][b.length];
-  };
-
-  const distance = levenshtein(text1, text2);
-  const similarity = 1 - distance / Math.max(text1.length, text2.length);
-  return similarity >= threshold;
-};
-
-// 定位到 PDF 对应页面
-const locatePdfPage = (text: string) => {
-  console.log('locatePdfPage function called');
-  // 定义一个清理函数
-  const cleanText = (input: string) => {
-    return input
-        .toLowerCase() // 转为小写
-        .replace(/[\r\n]/g, ' ') // 替换换行符为空格
-        .replace(/[^\w\s]/g, '') // 移除标点符号
-        .replace(/\s+/g, ' ') // 合并多余空格
-        .trim(); // 去除首尾空格
-  };
-  const cleanedText = cleanText(text); // 清理点击的文本内容
-  console.log(cleanedText);
-
-  const pageIndex = pdfTextContent.value.findIndex((page, pageIndex) => {
-    console.log(`Checking page ${pageIndex + 1}`);
-    const isMatch = page.some((line, lineIndex) => {
-      console.log(`Page ${pageIndex + 1}, Line ${lineIndex + 1}: ${line}`);
-      return line.includes(cleanedText);
-    });
-    console.log(`Page ${pageIndex + 1} match result: ${isMatch}`);
-    return isMatch;
-  });
-
-  if (pageIndex !== -1) {
-    console.log(`Matched page index: ${pageIndex}`);
-    if (pdfViewerRef.value && 'scrollToPage' in pdfViewerRef.value) {
-      (pdfViewerRef.value as any).scrollToPage(pageIndex + 1);
-    } else {
-      console.warn('PDF viewer reference is invalid or scrollToPage method is missing');
-    }
-  } else {
-    console.warn('No matching page found');
-    ElMessage.warning('未找到对应的 PDF 页面');
-  }
-};
-
-// 加载 PDF 并提取每页文本内容
-const loadPdfTextContent = async (pdfUrl: string) => {
-  // console.log("==================================");
-  // console.log('Loading PDF from URL:', pdfUrl);
-  try {
-    // const pdf = await PdfViewer.getDocument(pdfUrl).promise;
-    const loadingTask = pdfjsLib.getDocument(pdfUrl); // 加载 PDF
-    const pdf = await loadingTask.promise; // 获取 PDF 对象
-    console.log('PDF loaded successfully:', pdf);
-
-    const totalPages = pdf.numPages;
-    // console.log('Total pages in PDF:', totalPages);
-
-    const textContent: string[][] = [];
-    for (let i = 1; i <= totalPages; i++) {
-      const page = await pdf.getPage(i);
-      // console.log(`Processing page ${i}`);
-      const text = await page.getTextContent();
-      // 清理文本内容：去除多余空格和换行符
-      const lines = text.items.map((item: any) => item.str.trim()).filter(line => line !== '');
-      const cleanedText = lines.join(' ').toLowerCase(); // 合并为一个字符串并转为小写
-      console.log(`Page ${i} text content:`, cleanedText);
-      textContent.push([cleanedText]);
-    }
-
-    pdfTextContent.value = textContent;
-    // console.log('Extracted text content:', pdfTextContent.value);
-  } catch (error) {
-    console.error('Error loading PDF text content:', error);
-  }
-};
 
 const jobTypeMapping: { [key: number]: string } = {
   1: '房地产',
@@ -309,16 +211,81 @@ const jobTypeName = computed(() => {
   return jobTypeMapping[jobInfo.value.jobType] || '未知类型';
 });
 
-const base64ToBlob = (code: any) => {
-  code = code.replace(/[\n\r]/g, '')
-  const raw = window.atob(code)
-  const rawLength = raw.length
-  const uInt8Array = new Uint8Array(rawLength)
-  for (let i = 0; i < rawLength; ++i) {
-    uInt8Array[i] = raw.charCodeAt(i)
+// 计算当前页的数据
+const paginatedData = computed(() => {
+  const start = (tableCurrentPage.value - 1) * pageSize;
+  const end = start + pageSize;
+  return tableData.value.slice(start, end);
+});
+
+// 切换展开状态
+const toggleExpand = (row: any, field: string) => {
+  row[field] = !row[field];
+};
+
+// 处理 PDF 分页按钮点击
+const handlePdfPageChange = (page: number) => {
+  currentPage.value = page;
+  renderPage(page);
+};
+// 处理表格分页按钮点击
+const handleTablePageChange = (page: number) => {
+  tableCurrentPage.value = page; // 更新表格的当前页码
+};
+
+const renderPage = async (pageNum: number) => {
+  // console.log("+++++++++++")
+  if (!pdfUrl.value || !pdfCanvasRef.value) return;
+  // console.log("1")
+  // 加载 PDF 文档
+  const loadingTask = pdfjsLib.getDocument(pdfUrl.value);
+  const pdfDoc = await loadingTask.promise;
+  // console.log("2")
+  // 获取总页数
+  totalPages.value = pdfDoc.numPages;
+  // console.log("3")
+  // 获取指定页码的页面
+  const page = await pdfDoc.getPage(pageNum);
+
+  // console.log(`Rendering page ${pageNum}`); // Debug log
+
+  // 获取 canvas 上下文并设置其尺寸
+  const canvas = pdfCanvasRef.value as HTMLCanvasElement;
+  const context = canvas.getContext('2d');
+
+  const viewport = page.getViewport({ scale: 1 });
+  canvas.height = viewport.height;
+  canvas.width = viewport.width;
+
+  // 渲染页面
+  await page.render({ canvasContext: context, viewport }).promise;
+  console.log(`Page ${pageNum} rendered successfully`); // Debug log
+};
+
+
+// 定位到 PDF 对应页面
+const locatePdfPage = (pageNum: number) => {
+  console.log('locatePdfPage function called with pageNum:', pageNum);
+  currentPage.value = pageNum;  // 更新当前 PDF 页码
+  renderPage(pageNum); // 渲染对应的页面
+};
+
+const base64ToBlob = (code: string) => {
+  // 如果 base64 字符串以 "data:application/pdf;base64," 开头，需要去掉这个前缀
+  if (code.startsWith('data:application/pdf;base64,')) {
+    code = code.replace('data:application/pdf;base64,', '');
   }
-  return new Blob([uInt8Array], {type: 'application/pdf'})
-}
+
+  const raw = window.atob(code);
+  const rawLength = raw.length;
+  const uInt8Array = new Uint8Array(rawLength);
+
+  for (let i = 0; i < rawLength; ++i) {
+    uInt8Array[i] = raw.charCodeAt(i);
+  }
+
+  return new Blob([uInt8Array], { type: 'application/pdf' });
+};
 
 const fetchJobDetails = async () => {
   try {
@@ -341,6 +308,7 @@ const fetchJobDetails = async () => {
       fileName: data.file_name,
       filePath: data.path,
       paragraph: data.paragraph, // 新增字段
+      pageNum: data.page_num, // 新增字段
       paragraphClean: data.paragraph_clean, // 新增字段
       modelPredictDetails: data.model_predict_details, // 新增字段
       modelPredictLabels: data.model_predict_labels, // 新增字段
@@ -352,12 +320,13 @@ const fetchJobDetails = async () => {
       paragraphClean: data.paragraph_clean[index],
       modelPredictDetails: data.model_predict_details[index],
       modelPredictLabels: data.model_predict_labels[index],
+      pageNum: data.page_num[index],
     }));
 
     const blob = base64ToBlob(data.file_content);
-    // console.log('Generated Blob:', blob); // 打印 Blob 对象
+    console.log('Generated Blob:', blob); // 打印 Blob 对象
     pdfUrl.value = URL.createObjectURL(blob);
-    // console.log('Generated PDF URL:', pdfUrl.value); // 打印生成的 PDF URL
+    console.log('Generated PDF URL:', pdfUrl.value); // 打印生成的 PDF URL
 
   } catch (err: any) {
     console.error('获取工单详情失败:', err);
@@ -370,16 +339,31 @@ const fetchJobDetails = async () => {
 onMounted(async () => {
   await fetchJobDetails(); // 等待工单详情加载完成
   await nextTick(); // 确保 DOM 已渲染
-
-  if (pdfHeader.value) {
-    pdfWidth.value = pdfHeader.value.offsetWidth; // 动态获取 pdf-header 的宽度
-  }
-
+  console.log("pdfUrl.value", pdfUrl.value); // 确认 pdfUrl 是否正确
   if (pdfUrl.value) {
-    console.log('Calling loadPdfTextContent with URL:', pdfUrl.value); // 添加日志
-    loadPdfTextContent(pdfUrl.value); // 加载 PDF 文本内容
-  } else {
-    console.warn('pdfUrl.value is null or undefined');
+    // console.log("--------------------")
+    renderPage(currentPage.value); // 渲染 PDF 的第一页
+  }
+  // pdfCanvasRef 在这里已经指向实际的 canvas 元素
+  if (pdfCanvasRef.value) {
+    console.log("pdfCanvasRef.value", pdfCanvasRef.value); // 打印 canvas DOM 元素
+  }
+  // if (pdfHeader.value) {
+  //   pdfWidth.value = pdfHeader.value.offsetWidth; // 动态获取 pdf-header 的宽度
+  // }
+  //
+  // if (pdfUrl.value) {
+  //   console.log('Calling loadPdfTextContent with URL:', pdfUrl.value); // 添加日志
+  //   // loadPdfTextContent(pdfUrl.value); // 加载 PDF 文本内容
+  // } else {
+  //   console.warn('pdfUrl.value is null or undefined');
+  // }
+});
+// 监听 pdfUrl 的变化并重新加载 PDF 页面
+watch(pdfUrl, (newUrl) => {
+  if (newUrl) {
+    currentPage.value = 1; // 重置为第一页
+    renderPage(currentPage.value);
   }
 });
 
@@ -413,6 +397,19 @@ const changePage = (path: any) => {
   text-align: center;
   font-size: 16px;
   color: #666;
+}
+
+.pdf-container {
+  display: flex;
+  justify-content: center;  /* 水平居中 */
+  align-items: center;      /* 垂直居中 */
+  height: 100%;             /* 父容器的高度 */
+  background-color: #D6D6D6
+}
+
+.pagination-container {
+  text-align: center;
+  margin-top: 20px;
 }
 
 .button-group {

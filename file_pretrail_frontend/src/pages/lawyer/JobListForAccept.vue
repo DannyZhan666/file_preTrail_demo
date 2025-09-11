@@ -32,12 +32,11 @@
         <el-table-column prop="updateTime" label="客户确认时间">
         </el-table-column>
 
-        <el-table-column label="操作" align="center">
+        <el-table-column fixed="right" label="操作" min-width="auto" align="center">
           <template v-slot="scope">
-            <el-button type="success" @click="handleDetail(scope.row.jobId)">详情</el-button>
-            <el-popconfirm title="确定删除吗？" @confirm="deleteWorkOrder(scope.row.jobId)">
-              <el-button type="danger" slot="reference">删除</el-button>
-            </el-popconfirm>
+            <el-button link type="success" size="large" @click="handleDetail(scope.row.jobId)">
+              查看详情
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -51,7 +50,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
 import dayjs from 'dayjs';
 import { useRouter } from "vue-router";
 import myAxios from "@/request";
@@ -120,9 +118,9 @@ const handleDetail = (jobId:any) => {
   });
 };
 
-const deleteWorkOrder = async (id:any) => {
+const deleteWorkOrder = async (jobId) => {
   try {
-    const response = await axios.delete(`/job/delete/${id}`);
+    const response = await myAxios.delete(`/job/deleteNewJobForClient/${jobId}`);
     if (response.data && response.data.code === 200) {
       fetchWorkOrders();
     } else {
