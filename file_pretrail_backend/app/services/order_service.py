@@ -13,7 +13,7 @@ def order_list_lawyer(db: Session,page: int, page_size: int, user_id: int):
 
     query = db.query(Orders).filter(Orders.lawyer_id == user_id, Orders.is_deleted == 0)
     total = query.count()
-    results = query.offset((page - 1) * page_size).limit(page_size).all()
+    results = query.order_by(Orders.create_time.desc()).offset((page - 1) * page_size).limit(page_size).all()
     # 转换为 OrderVO
     orders = []
     for order in results:
@@ -41,7 +41,7 @@ def order_list_client(db: Session,page: int, page_size: int, user_id: int):
 
     query = db.query(Orders).filter(Orders.client_id == user_id, Orders.is_deleted == 0)
     total = query.count()
-    results = query.offset((page - 1) * page_size).limit(page_size).all()
+    results = query.order_by(Orders.create_time.desc()).offset((page - 1) * page_size).limit(page_size).all()
     # 转换为 OrderVO
     orders = []
     for order in results:

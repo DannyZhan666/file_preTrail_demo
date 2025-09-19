@@ -26,7 +26,7 @@ def list_raw_job_for_client(db: Session, page: int, page_size: int, client_id: i
 
     # 分页
     total = query.count()
-    jobs = query.offset((page - 1) * page_size).limit(page_size).all()
+    jobs = query.order_by(Job.create_time.desc()).offset((page - 1) * page_size).limit(page_size).all()
 
     # 转换为 RawJobListForClientVO
     job_list_for_client_vo = [
@@ -72,7 +72,7 @@ def list_new_job_for_client(page: int, page_size: int, user_id: int, db: Session
 
     # 分页查询
     total_jobs = query.count()
-    newjobs = query.offset((page - 1) * page_size).limit(page_size).all()
+    newjobs = query.order_by(Job.create_time.desc()).offset((page - 1) * page_size).limit(page_size).all()
 
     # 转换 Job 为 NewJobListForClientVO
     job_list_for_client = [convert_to_new_job_list_for_client_vo(job, db) for job in newjobs]
@@ -121,6 +121,7 @@ def list_raw_job_for_lawyer(page: int, page_size: int, lawyer_id: int, db: Sessi
 
     # 3. 过滤掉已被该律师接单的工单
     remaining_jobs = [job for job in job_list_no_status if job.id not in taken_job_ids]
+    remaining_jobs = sorted(remaining_jobs, key=lambda job: job.create_time, reverse=True)
 
     # 分页处理
     start = (page - 1) * page_size

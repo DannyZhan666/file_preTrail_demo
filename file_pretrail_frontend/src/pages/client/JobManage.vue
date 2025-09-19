@@ -70,7 +70,10 @@ const fetchWorkOrders = async () => {
         fid: job.fid,
         // 格式化 createTime 字段
         createTime: dayjs(job.issueDate).format('YYYY-MM-DD HH:mm:ss'),
-      }));
+      })).sort((a, b) => {
+        // 按照 createTime 降序排序
+        return dayjs(a.createTime).isBefore(dayjs(b.createTime)) ? 1 : -1;
+      });
     } else {
       console.error('Invalid response data:', response.data);
     }
